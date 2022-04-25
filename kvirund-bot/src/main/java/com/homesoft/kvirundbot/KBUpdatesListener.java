@@ -86,7 +86,7 @@ public class KBUpdatesListener implements UpdatesListener {
                 message.from().username(),
                 null == message.text() ? "<none>" : "'" + message.text() + "'");
 
-        boolean mention = false;
+        boolean mention = Chat.Type.Private == message.chat().type();
         if (null != message.text()) {
             final MessageEntity[] entities = message.entities();
             if (null != entities) {
@@ -108,7 +108,7 @@ public class KBUpdatesListener implements UpdatesListener {
         }
 
         if (mention) {
-            bot.execute(new SendMessage(message.chat().id(), "Пошёл нахуй, @" + message.from().username()));
+            bot.execute(new SendMessage(message.from().id(), "Пошёл нахуй!"));
         }
     }
 
