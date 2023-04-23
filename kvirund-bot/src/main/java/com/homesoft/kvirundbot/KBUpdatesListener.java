@@ -4,16 +4,22 @@ import com.homesoft.openai.OpenAI;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.*;
+import com.pengrad.telegrambot.request.GetFile;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
+import com.pengrad.telegrambot.response.GetFileResponse;
 import com.pengrad.telegrambot.response.GetMeResponse;
 import lombok.Builder;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -120,7 +126,8 @@ public class KBUpdatesListener implements UpdatesListener {
                             break;
 
                         case bot_command:
-                            processBotCommand(message.text().substring(entity.offset(), entity.length()), message);
+                            final String request = Arrays.stream(message.text().split(" ")).skip(1).collect(Collectors.joining(" "));
+                            processBotCommand(message.text().substring(entity.offset(), entity.length()), request, message);
                             processed = true;
                             break;
 
@@ -131,46 +138,119 @@ public class KBUpdatesListener implements UpdatesListener {
             } else if (null != message.replyToMessage()) {
                 final Message replyToMessage = message.replyToMessage();
                 if (Objects.equals(replyToMessage.from().id(), me.user().id())) {
-                    log.info("Replying to a jerk.");
-                    bot.execute(new SendMessage(message.chat().id(),
-                            "Пошёл нахуй!").replyToMessageId(message.messageId()));
+                    if (null != replyToMessage.photo()) {
+                        final String request = message.text();
+                        processBotCommand("/image", request, message);
+                    } else if (null != replyToMessage.text()) {
+                        final String request = message.text();
+                        processBotCommand("/text", request, message);
+                    }
                     processed = true;
                 }
             }
         }
 
         if (privateMessage && !processed) {
-            bot.execute(new SendMessage(message.from().id(), "Пошёл нахуй!").replyToMessageId(message.messageId()));
+            final String request = message.text();
+            processBotCommand("/text", request, message);
         }
     }
 
-    private void processBotCommand(String command, Message message) {
+    private void processBotCommand(String command, String request, Message message) {
         final String user = message.from().username();
-        final String request = Arrays.stream(message.text().split(" ")).skip(1).collect(Collectors.joining(" "));
         if ("/stats".equalsIgnoreCase(command)) {
             log.info("Processing '{}' command ({})", command, command.getBytes(StandardCharsets.UTF_8));
             bot.execute(new SendMessage(message.chat().id(), "42!"));
         } else if ("/image".equalsIgnoreCase(command)) {
-            executeOpenAIFeature(user,
+            if (null != message.replyToMessage() && null != message.replyToMessage().photo()) {
+                log.info("Got request '{}' from user '{}' associated with an image", request, user);
+
+                final Message replyToMessage = message.replyToMessage();
+                final byte[] photo = downloadPhoto(replyToMessage);
+
+                executeOpenAIFeature(user,
                     message.chat().id(),
                     request,
-                    OpenAI::generateImage,
+                    openai -> openai.variateImage(photo),
                     result -> bot.execute(new SendPhoto(message.chat().id(), new File(result)).caption(request)));
+            } else {
+                log.info("Got request '{}' from user '{}' to generate an image", request, user);
+                executeOpenAIFeature(user,
+                        message.chat().id(),
+                        request,
+                        OpenAI::generateImage,
+                        result -> bot.execute(new SendPhoto(message.chat().id(), new File(result)).caption(request)));
+            }
         } else if ("/text".equalsIgnoreCase(command)) {
-            executeOpenAIFeature(user,
-                    message.chat().id(),
-                    request,
-                    OpenAI::generateTextCompletion,
-                    result -> {
-                        try {
-                            bot.execute(new SendMessage(message.chat().id(), Files.readString(Paths.get(result))));
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
+            if (null != message.replyToMessage() && null != message.replyToMessage().text()) {
+                log.info("Got request '{}' from user '{}' associated with a text message", request, user);
+
+                final Message replyToMessage = message.replyToMessage();
+
+                executeOpenAIFeature(user,
+                        message.chat().id(),
+                        request,
+                        openai -> openai.editText(replyToMessage.text()),
+                        result -> {
+                            try {
+                                bot.execute(new SendMessage(message.chat().id(), Files.readString(Paths.get(result))));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+            } else {
+                executeOpenAIFeature(user,
+                        message.chat().id(),
+                        request,
+                        OpenAI::generateTextCompletion,
+                        result -> {
+                            try {
+                                bot.execute(new SendMessage(message.chat().id(), Files.readString(Paths.get(result))));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+            }
         } else {
             log.warn("Unknown command {} ({})", command, command.getBytes(StandardCharsets.UTF_8));
             bot.execute(new SendMessage(message.chat().id(), "Я таких слов не ведаю."));
+        }
+    }
+
+    private byte[] downloadPhoto(Message message) {
+        final File temporaryDirectory = new File(System.getProperty("java.io.tmpdir"));
+        final File temporaryFile;
+        try {
+            temporaryFile = File.createTempFile("photo", null, temporaryDirectory);
+        } catch (IOException e) {
+            log.error("Couldn't create temporary file", e);
+            bot.execute(new SendMessage(message.chat().id(), "Что-то пошло не так."));
+            return null;
+        }
+
+        final PhotoSize photoSize = message.photo()[3];
+        final String fileId = photoSize.fileId();
+        final GetFile getFile = new GetFile(fileId);
+        final GetFileResponse response = bot.execute(getFile);
+        try (InputStream is = new URL("https://api.telegram.org/file/bot" + bot.getToken() + "/" + response.file()
+                .filePath()).openStream()) {
+            FileUtils.copyInputStreamToFile(is, temporaryFile);
+        } catch (MalformedURLException e) {
+            log.error("Couldn't create URL", e);
+            bot.execute(new SendMessage(message.chat().id(), "Что-то пошло не так."));
+            return null;
+        } catch (IOException e) {
+            log.error("Couldn't download and save photo to a temporary file", e);
+            bot.execute(new SendMessage(message.chat().id(), "Что-то пошло не так."));
+            return null;
+        }
+
+        try {
+            return FileUtils.readFileToByteArray(temporaryFile);
+        } catch (IOException e) {
+            log.error("Couldn't read photo from a temporary file", e);
+            bot.execute(new SendMessage(message.chat().id(), "Что-то пошло не так."));
+            return null;
         }
     }
 
