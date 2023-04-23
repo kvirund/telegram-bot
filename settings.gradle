@@ -10,3 +10,4 @@
 rootProject.name = 'kvirund-bot'
 
 include 'kvirund-bot'
+include 'openai'

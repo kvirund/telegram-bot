@@ -1,9 +1,13 @@
 ext {
-    log4jVersion = '2.17.2'
+    log4jVersion = '2.20.0'
 }
 
 subprojects {
     repositories {
         mavenCentral()
+    }
+
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
     }
 }
