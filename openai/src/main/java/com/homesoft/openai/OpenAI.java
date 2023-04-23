@@ -12,11 +12,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -26,7 +28,8 @@ import java.util.concurrent.Callable;
 @CommandLine.Command
 public class OpenAI implements Callable<Integer> {
     private static final String SCRIPT_DIRECTORY = "openai/src/python/";
-    private static final String SCRIPT_NAME = "image_generation.py";
+    private static final String GENERATE_IMAGE_SCRIPT_NAME = "image_generation.py";
+    private static final String GENERATE_COMPLETION_SCRIPT_NAME = "completion_generation.py";
     private static final String DIGEST_ALGORITHM = "SHA-256";
     private static final Logger log = LogManager.getLogger();
     private static final Logger scriptLogger = LogManager.getLogger("script");
@@ -79,21 +82,20 @@ public class OpenAI implements Callable<Integer> {
         final String outputDirectory = createOutputDirectory(hash);
         saveRequestAttributes(outputDirectory);
 
-        return generateImage(outputDirectory);
+        return generate(outputDirectory, GENERATE_IMAGE_SCRIPT_NAME) + ".jpeg";
     }
 
-    private String generateImage(String outputDirectory) {
-        final String outputFileName = outputDirectory + ".jpeg";
+    private String generate(String outputDirectoryPath, String scriptName) {
         final List<String> command = Arrays.asList("python",
-                SCRIPT_DIRECTORY + SCRIPT_NAME,
+                SCRIPT_DIRECTORY + scriptName,
                 "--output",
-                outputFileName,
+                outputDirectoryPath,
                 "--api-key",
                 apiKey,
                 "--organization",
                 organization,
                 "--request",
-                request,
+                request, //Base64.getEncoder().encodeToString(request.getBytes(StandardCharsets.UTF_8)),
                 "--user",
                 user);
         log.info("Executing command: {}", String.join(" ", command));
@@ -110,15 +112,15 @@ public class OpenAI implements Callable<Integer> {
             final int exitCode = process.exitValue();
             if (0 != exitCode) {
                 log.error("Script execution failed with exit code {}", exitCode);
-                deleteOutputDirectory(outputDirectory);
+                deleteOutputDirectory(outputDirectoryPath);
                 throw new RuntimeException("Script execution failed with exit code " + exitCode);
             }
         } catch (IOException e) {
-            deleteOutputDirectory(outputDirectory);
+            deleteOutputDirectory(outputDirectoryPath);
             throw new RuntimeException("Error happened while executing the script.", e);
         }
 
-        return outputFileName;
+        return outputDirectoryPath;
     }
 
     private void deleteOutputDirectory(String outputDirectory) {
@@ -162,5 +164,13 @@ public class OpenAI implements Callable<Integer> {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Couldn't get instance of the MessageDigest for " + DIGEST_ALGORITHM, e);
         }
+    }
+
+    public String generateTextCompletion() {
+        final String hash = getHash(request + System.currentTimeMillis());
+        final String outputDirectory = createOutputDirectory(hash);
+        saveRequestAttributes(outputDirectory);
+
+        return generate(outputDirectory, GENERATE_COMPLETION_SCRIPT_NAME) + ".txt";
     }
 }

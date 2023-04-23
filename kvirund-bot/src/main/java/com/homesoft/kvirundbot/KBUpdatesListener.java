@@ -4,7 +4,6 @@ import com.homesoft.openai.OpenAI;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.*;
-import com.pengrad.telegrambot.request.GetMe;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
 import com.pengrad.telegrambot.response.GetMeResponse;
@@ -16,10 +15,14 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Builder
@@ -105,6 +108,7 @@ public class KBUpdatesListener implements UpdatesListener {
                 null == message.text() ? "<none>" : "'" + message.text() + "'");
 
         boolean privateMessage = Chat.Type.Private == message.chat().type();
+        boolean processed = false;
         if (null != message.text()) {
             final MessageEntity[] entities = message.entities();
             if (null != entities) {
@@ -112,10 +116,12 @@ public class KBUpdatesListener implements UpdatesListener {
                     switch (entity.type()) {
                         case mention:
                             bot.execute(new SendMessage(message.chat().id(), "Пошёл нахуй!").replyToMessageId(message.messageId()));
+                            processed = true;
                             break;
 
                         case bot_command:
                             processBotCommand(message.text().substring(entity.offset(), entity.length()), message);
+                            processed = true;
                             break;
 
                         default:
@@ -125,43 +131,63 @@ public class KBUpdatesListener implements UpdatesListener {
             } else if (null != message.replyToMessage()) {
                 final Message replyToMessage = message.replyToMessage();
                 if (Objects.equals(replyToMessage.from().id(), me.user().id())) {
+                    log.info("Replying to a jerk.");
                     bot.execute(new SendMessage(message.chat().id(),
                             "Пошёл нахуй!").replyToMessageId(message.messageId()));
-                    log.info("Replying to a jerk.");
+                    processed = true;
                 }
             }
         }
 
-        if (privateMessage) {
+        if (privateMessage && !processed) {
             bot.execute(new SendMessage(message.from().id(), "Пошёл нахуй!").replyToMessageId(message.messageId()));
         }
     }
 
     private void processBotCommand(String command, Message message) {
+        final String user = message.from().username();
+        final String request = Arrays.stream(message.text().split(" ")).skip(1).collect(Collectors.joining(" "));
         if ("/stats".equalsIgnoreCase(command)) {
             log.info("Processing '{}' command ({})", command, command.getBytes(StandardCharsets.UTF_8));
             bot.execute(new SendMessage(message.chat().id(), "42!"));
-        }
-        if ("/image".equalsIgnoreCase(command)) {
-            final String user = message.from().username();
-            final String request = Arrays.stream(message.text().split(" ")).skip(1).collect(Collectors.joining(" "));
-            final OpenAI openAI = OpenAI.builder()
-                    .apiKey(apiKey)
-                    .organization(organization)
-                    .user(user)
-                    .request(request)
-                    .build();
-            try {
-                final String imageFileName = openAI.generateImage();
-                bot.execute(new SendPhoto(message.chat().id(), new File(imageFileName)).caption(request));
-                logRequest(user, request, imageFileName);
-            } catch (Exception e) {
-                logRequest(user, request, "<failure>");
-                bot.execute(new SendMessage(message.chat().id(), "Что-то пошло не так. :-("));
-            }
+        } else if ("/image".equalsIgnoreCase(command)) {
+            executeOpenAIFeature(user,
+                    message.chat().id(),
+                    request,
+                    OpenAI::generateImage,
+                    result -> bot.execute(new SendPhoto(message.chat().id(), new File(result)).caption(request)));
+        } else if ("/text".equalsIgnoreCase(command)) {
+            executeOpenAIFeature(user,
+                    message.chat().id(),
+                    request,
+                    OpenAI::generateTextCompletion,
+                    result -> {
+                        try {
+                            bot.execute(new SendMessage(message.chat().id(), Files.readString(Paths.get(result))));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
         } else {
             log.warn("Unknown command {} ({})", command, command.getBytes(StandardCharsets.UTF_8));
             bot.execute(new SendMessage(message.chat().id(), "Я таких слов не ведаю."));
+        }
+    }
+
+    private void executeOpenAIFeature(String user, long chatId, String request, Function<OpenAI, String> generatorFunction, Consumer<String> resultConsumer) {
+        final OpenAI openAI = OpenAI.builder()
+                .apiKey(apiKey)
+                .organization(organization)
+                .user(user)
+                .request(request)
+                .build();
+        try {
+            final String resultFileName = generatorFunction.apply(openAI);
+            resultConsumer.accept(resultFileName);
+            logRequest(user, request, resultFileName);
+        } catch (Exception e) {
+            logRequest(user, request, "<failure>");
+            bot.execute(new SendMessage(chatId, "Что-то пошло не так. :-("));
         }
     }
 
