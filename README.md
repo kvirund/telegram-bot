@@ -14,3 +14,17 @@ Usage: <main class> [--api-key=<apiKey>] [--organization=<organization>]
 ```
 
 Here `API key` as well as `organization` are taken from the OpenAPI account. The `token` is the bot token provided by the `@BotFather` bot in in the Telegram after executing the `/token` command.
+
+To generate a nice log from the outputs, this command could be used:
+
+```shell
+for i in $(find ./ -type d -printf "%T@ %p\n"| tail -n +2 | sort -n | awk '{print $2}'); do
+  if [ -f "${i}/response.json" ]; then
+    perl -E 'say"="x80'
+    echo "::: $(basename ${i}) :::"
+    cat "${i}/request.txt"
+    perl -E 'say;say "-" x 80'
+    cat "${i}/response.json" | jq -r 'if .choices == null then "<picture?>" else .choices[0].text end'
+  fi
+done > summary.txt
+```
