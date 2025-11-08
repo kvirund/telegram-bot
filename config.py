@@ -14,6 +14,7 @@ class BotConfig:
     ai_provider: str
     api_key: str
     model_name: str
+    base_url: str = None  # For local API provider
     context_messages_count: int = 10
     max_retries: int = 3
     
@@ -25,8 +26,8 @@ class BotConfig:
             raise ValueError("CHANNEL_ID is required")
         if not self.bot_username:
             raise ValueError("BOT_USERNAME is required")
-        if self.ai_provider not in ["groq", "openrouter"]:
-            raise ValueError("AI_PROVIDER must be 'groq' or 'openrouter'")
+        if self.ai_provider not in ["groq", "openrouter", "local"]:
+            raise ValueError("AI_PROVIDER must be 'groq', 'openrouter', or 'local'")
         if not self.api_key:
             raise ValueError(f"API key for {self.ai_provider} is required")
         if not self.model_name:
@@ -57,12 +58,17 @@ def load_config() -> BotConfig:
     ai_provider = os.getenv("AI_PROVIDER", "groq").lower()
     
     # Get appropriate API key and model based on provider
+    base_url = None
     if ai_provider == "groq":
         api_key = os.getenv("GROQ_API_KEY", "")
         model_name = os.getenv("GROQ_MODEL", "llama-3.2-90b-text-preview")
     elif ai_provider == "openrouter":
         api_key = os.getenv("OPENROUTER_API_KEY", "")
         model_name = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+    elif ai_provider == "local":
+        api_key = os.getenv("LOCAL_API_KEY", "dummy")  # Local API may not require auth
+        model_name = os.getenv("LOCAL_MODEL", "Qwen/Qwen2.5-14B-Instruct-AWQ")
+        base_url = os.getenv("LOCAL_API_URL", "http://localhost:8000/v1")
     else:
         raise ValueError(f"Unknown AI_PROVIDER: {ai_provider}")
     
@@ -74,6 +80,7 @@ def load_config() -> BotConfig:
         ai_provider=ai_provider,
         api_key=api_key,
         model_name=model_name,
+        base_url=base_url,
         context_messages_count=int(os.getenv("CONTEXT_MESSAGES_COUNT", "10")),
         max_retries=int(os.getenv("MAX_RETRIES", "3"))
     )

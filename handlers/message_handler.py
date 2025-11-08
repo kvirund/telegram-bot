@@ -15,7 +15,8 @@ config = get_config()
 ai_provider = create_provider(
     provider_type=config.ai_provider,
     api_key=config.api_key,
-    model=config.model_name
+    model=config.model_name,
+    base_url=config.base_url
 )
 
 
