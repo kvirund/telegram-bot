@@ -1,0 +1,12 @@
+# Telegram Bot Framework
+python-telegram-bot[ext]==20.7
+
+# AI Providers
+groq==0.9.0
+openai==1.54.0
+
+# Configuration
+python-dotenv==1.0.0
+
+# Async HTTP Client
+aiohttp==3.9.1

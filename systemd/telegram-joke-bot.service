@@ -1,0 +1,17 @@
+[Unit]
+Description=Telegram Joke Bot
+After=network.target
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+WorkingDirectory=/path/to/telegram-joke-bot
+Environment="PATH=/path/to/telegram-joke-bot/venv/bin"
+ExecStart=/path/to/telegram-joke-bot/venv/bin/python bot.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
