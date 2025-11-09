@@ -98,6 +98,95 @@ class OpenRouterProvider(AIProvider):
             logger.error(f"Failed to generate joke with OpenRouter: {e}")
             raise Exception(f"OpenRouter API error: {str(e)}")
     
+    async def free_request(self, user_message: str, system_message: str = None) -> str:
+        """Make a free-form request to the AI model.
+        
+        Args:
+            user_message: The user's message/prompt
+            system_message: Optional system message to set context/behavior
+            
+        Returns:
+            str: AI model's response
+            
+        Raises:
+            Exception: If request fails
+        """
+        try:
+            messages = []
+            
+            if system_message:
+                messages.append({
+                    "role": "system",
+                    "content": system_message
+                })
+            
+            messages.append({
+                "role": "user",
+                "content": user_message
+            })
+            
+            logger.info(f"Making free request to OpenRouter")
+            
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=2000,
+                top_p=1.0
+            )
+            
+            result = response.choices[0].message.content.strip()
+            logger.info(f"Successfully received response ({len(result)} chars)")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to make free request with OpenRouter: {e}")
+            raise Exception(f"OpenRouter API error: {str(e)}")
+    
+    async def generate_autonomous_comment(self, prompt: str, language: str = "en") -> str:
+        """Generate an autonomous comment for the chat.
+        
+        Args:
+            prompt: The prompt containing conversation context and instructions
+            language: Preferred language for the response
+            
+        Returns:
+            str: AI model's response (should be JSON formatted)
+            
+        Raises:
+            Exception: If generation fails
+        """
+        try:
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant that responds in valid JSON format."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+            
+            logger.info(f"Generating autonomous comment with OpenRouter")
+            
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=0.8,
+                max_tokens=1000
+            )
+            
+            result = response.choices[0].message.content.strip()
+            logger.info(f"Successfully generated autonomous comment ({len(result)} chars)")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to generate autonomous comment with OpenRouter: {e}")
+            raise Exception(f"OpenRouter API error: {str(e)}")
+    
     def get_provider_name(self) -> str:
         """Get the provider name.
         

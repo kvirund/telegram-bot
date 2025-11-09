@@ -1,0 +1,123 @@
+# Telegram Joke Bot Configuration
+
+# Bot Settings
+bot:
+  telegram_token: "YOUR_BOT_TOKEN_HERE"  # Get from @BotFather on Telegram
+  bot_username: "@YourBotUsername"
+  admin_user_ids: [123456789]  # List of admin user IDs for /reload and /comment commands
+
+# AI Provider Configuration
+ai:
+  provider: "local"  # Options: groq, openrouter, local
+  context_messages_count: 10
+  max_retries: 3
+  
+  # Groq settings
+  groq:
+    api_key: "gsk_your_groq_api_key_here"
+    model: "llama-3.2-90b-text-preview"
+  
+  # OpenRouter settings
+  openrouter:
+    api_key: "sk-or-your_openrouter_api_key_here"
+    model: "openai/gpt-4o-mini"
+  
+  # Local API settings (vLLM, Ollama, etc.)
+  local:
+    api_key: "dummy"
+    api_url: "http://localhost:11434/v1"
+    model: "dolphin-mistral"
+
+autonomous_commenting:
+  enabled: true
+  min_messages_between_comments: 8
+  max_messages_between_comments: 20
+  comment_probability: 0.3  # 30% chance when criteria met
+  min_time_between_comments_seconds: 120
+  use_intelligent_decision: true
+  
+  # Message delivery
+  prefer_replies: true  # Prefer replying to messages when relevant
+  standalone_probability: 0.3  # 30% general observations, 70% targeted
+  
+  # Roasting behavior
+  roasting_enabled: true
+  roasting_aggression: 0.7  # 0.0 = gentle teasing, 1.0 = brutal roasting
+  target_weaknesses_probability: 0.6  # 60% chance to aim at weakness vs general comment
+  avoid_sensitive_topics: false  # No boundaries
+  learn_from_reactions: true
+
+user_profiling:
+  enabled: true
+  profile_directory: "profiles"
+  max_profile_size_kb: 100
+  
+  # What to track
+  track_topics: true
+  track_speaking_style: true
+  track_interests: true
+  track_relationships: true
+  track_humor_type: true
+  track_weaknesses: true
+  track_mistakes: true
+  track_embarrassments: true
+  track_contradictions: true
+  
+  auto_save_interval_seconds: 300
+  cross_chat_profiling: true
+
+conversation_monitoring:
+  context_window_size: 15
+  language_detection: true
+  uncensored_mode: true
+
+# Reaction behavior
+reaction_system:
+  enabled: true
+  track_reactions: true  # Track reactions to build profile insights
+  add_own_reactions: true  # Bot can react to messages
+  reaction_probability: 0.15  # 15% chance to react when appropriate
+  min_time_between_reactions_seconds: 60
+  reaction_types:
+    # Positive reactions
+    - "👍"  # Like/thumbs up
+    - "❤"  # Love/heart
+    - "🔥"  # Fire/hot/awesome
+    - "🥰"  # Love face
+    - "👏"  # Clapping/applause
+    - "😁"  # Grinning face
+    - "💯"  # 100/perfect
+    - "🎉"  # Party/celebration
+    - "💪"  # Strong/power
+    - "⚡"  # Lightning/energy
+    - "🏆"  # Trophy/winner
+    - "🎯"  # Target/on point
+    - "🤝"  # Handshake/agreement
+    - "🫡"  # Salute/respect
+    # Humor/Fun
+    - "😂"  # Laughing
+    - "🤣"  # Rolling on floor laughing
+    - "😭"  # Crying laughter
+    - "🤪"  # Zany face
+    - "🤡"  # Clown face
+    - "💀"  # Skull (died laughing)
+    # Surprise/Shock
+    - "😱"  # Screaming in fear
+    - "🤯"  # Mind blown
+    - "😮"  # Open mouth surprise
+    - "👻"  # Ghost
+    # Thinking/Curious
+    - "🤔"  # Thinking face
+    - "👀"  # Eyes watching
+    - "🧐"  # Monocle face
+    - "🤨"  # Raised eyebrow
+    # Negative/Disapproval
+    - "👎"  # Thumbs down
+    - "😢"  # Crying
+    - "💩"  # Poop (disapproval)
+    - "🤮"  # Vomiting (disgust)
+    - "🥱"  # Yawning (boring)
+    - "😴"  # Sleeping (boring)
+
+# Chat IDs where autonomous commenting is disabled
+excluded_chats: []

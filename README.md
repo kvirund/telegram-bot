@@ -1,350 +1,267 @@
 # Telegram Joke Bot
 
-A production-ready Telegram bot that tells Russian jokes using AI (Groq or OpenRouter). The bot monitors channels continuously and responds to `/joke` commands and bot mentions with contextual humor.
+A production-ready Telegram bot with AI-powered features including contextual jokes, autonomous commenting with roasting, user profiling, and intelligent reactions.
 
 ## Features
 
-- **Multiple Trigger Modes**:
-  - `/joke` - Generates a Russian joke based on recent conversation context
-  - `/joke <context>` - Generates a Russian joke based on the provided context text
-  - Bot mentions - Generates contextual jokes when the bot is mentioned in conversation
+### Core Features
+- **Contextual Jokes**: Generates Russian jokes based on conversation context
+- **Multiple Trigger Modes**: `/joke` command, bot mentions, custom context
+- **Autonomous Commenting**: Bot intelligently participates in conversations with roasting capabilities
+- **User Profiling**: Tracks user patterns, weaknesses, and conversation style
+- **Smart Reactions**: Automatically adds contextual emoji reactions to messages
+- **Private Conversations**: Context-aware chat with language detection
 
-- **Flexible AI Provider**:
-  - Groq (free tier, fast responses with Llama models)
-  - OpenRouter (flat monthly pricing with multiple model options)
-  - Easy switching between providers via configuration
+### AI Provider Support
+- **Groq** (free tier, fast Llama models)
+- **OpenRouter** (multiple model options)
+- **Local AI** (vLLM, Ollama, or custom endpoints)
 
-- **Production-Ready**:
-  - Long-polling (works without white IP address)
-  - Systemd service for automatic restart and management
-  - Comprehensive logging
-  - Error handling and recovery
-  - In-memory conversation context tracking
+### Production Features
+- Long-polling (no white IP required)
+- Systemd service support
+- Comprehensive logging
+- Hot-reload configuration
+- Automatic profile/context saving
 
 ## Prerequisites
 
 - Python 3.10 or higher
 - Telegram Bot Token (from [@BotFather](https://t.me/botfather))
-- Groq API key (free at [console.groq.com](https://console.groq.com))
-- OR OpenRouter API key (from [openrouter.ai](https://openrouter.ai))
+- AI Provider API key (Groq, OpenRouter, or local server)
 
-## Installation
+## Quick Start
 
-### 1. Clone or Download the Repository
+### 1. Install
 
 ```bash
-# If using git
+# Clone repository
 git clone <repository-url>
 cd telegram-joke-bot
 
-# Or download and extract the files
-```
-
-### 2. Create Virtual Environment
-
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Configure the Bot
-
-Copy the example environment file and edit it with your credentials:
-
-```bash
-cp .env.example .env
-nano .env  # Or use any text editor
-```
-
-Edit `.env` with your actual values:
-
-```env
-# Telegram Bot Configuration
-TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
-CHANNEL_ID=-1001234567890
-BOT_USERNAME=@your_bot_username
-
-# AI Provider Configuration
-AI_PROVIDER=groq
-
-# Groq Configuration
-GROQ_API_KEY=gsk_your_actual_groq_api_key_here
-GROQ_MODEL=llama-3.2-90b-text-preview
-
-# OpenRouter Configuration (optional, for switching)
-OPENROUTER_API_KEY=sk-or-your_openrouter_api_key_here
-OPENROUTER_MODEL=openai/gpt-4o-mini
-
-# Bot Behavior
-CONTEXT_MESSAGES_COUNT=10
-MAX_RETRIES=3
-```
-
-### 5. Get Your Configuration Values
-
-#### Telegram Bot Token
-1. Open Telegram and search for [@BotFather](https://t.me/botfather)
-2. Send `/newbot` and follow the instructions
-3. Copy the bot token provided
-
-#### Channel ID
-1. Add your bot to the channel as an administrator
-2. Send a message in the channel
-3. Visit: `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
-4. Look for `"chat":{"id":-1001234567890}` - this is your channel ID
-
-#### Bot Username
-The username you created for your bot (e.g., `@my_joke_bot`)
-
-#### API Keys
-- **Groq**: Sign up at [console.groq.com](https://console.groq.com) and create an API key
-- **OpenRouter**: Sign up at [openrouter.ai](https://openrouter.ai) and create an API key
-
-## Running the Bot
-
-### Local Testing
-
-```bash
-# Make sure virtual environment is activated
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Run the bot
-python bot.py
-```
-
-You should see:
-```
-Starting Telegram Joke Bot...
-Configuration loaded successfully
-AI Provider: groq
-Model: llama-3.2-90b-text-preview
-Bot Username: @your_bot_username
-Bot started successfully. Polling for updates...
-```
-
-### Test the Bot
-
-1. Go to your Telegram channel
-2. Try these commands:
-   - `/joke` - Should generate a contextual joke
-   - `/joke programming` - Should generate a joke about programming
-   - Mention the bot in a message - Should generate a contextual joke
-
-## Production Deployment (Ubuntu Server)
-
-### 1. Transfer Files to Server
-
-```bash
-# From your local machine
-scp -r telegram-joke-bot user@your-server:/home/user/
-```
-
-Or clone directly on the server.
-
-### 2. Set Up on Server
-
-```bash
-# SSH into your server
-ssh user@your-server
-
-# Navigate to the bot directory
-cd /home/user/telegram-joke-bot
-
 # Create virtual environment
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Configure .env file
-cp .env.example .env
-nano .env  # Add your credentials
 ```
 
-### 3. Set Up Systemd Service
+### 2. Configure
 
-Edit the service file with your actual paths:
+Edit `config.yaml` with your settings:
 
+```yaml
+# Bot Settings
+bot:
+  telegram_token: "YOUR_BOT_TOKEN"
+  bot_username: "@YourBotUsername"
+  admin_user_ids: []  # Add admin IDs for /reload and /comment
+
+# AI Provider Configuration
+ai:
+  provider: "local"  # Options: groq, openrouter, local
+  context_messages_count: 10
+  max_retries: 3
+  
+  # Groq settings
+  groq:
+    api_key: "gsk_your_groq_api_key"
+    model: "llama-3.2-90b-text-preview"
+  
+  # OpenRouter settings
+  openrouter:
+    api_key: "sk-or-your_key"
+    model: "openai/gpt-4o-mini"
+  
+  # Local API settings (vLLM, Ollama, etc.)
+  local:
+    api_key: "dummy"
+    api_url: "http://localhost:11434/v1"
+    model: "llama2-uncensored"
+```
+
+### 3. Run
+
+```bash
+python bot.py
+```
+
+## Configuration Guide
+
+All configuration is in `config.yaml`. See [`config.yaml`](config.yaml) for complete options.
+
+### Key Sections
+
+#### Bot Settings
+```yaml
+bot:
+  telegram_token: "..."  # From @BotFather
+  bot_username: "@..."   # Your bot's username
+  admin_user_ids: [123456789]  # Admin users for /reload, /comment
+```
+
+#### AI Provider
+```yaml
+ai:
+  provider: "local"  # Switch between groq/openrouter/local
+  context_messages_count: 10
+  max_retries: 3
+```
+
+#### Autonomous Commenting
+```yaml
+autonomous_commenting:
+  enabled: true
+  roasting_enabled: true
+  roasting_aggression: 0.7  # 0.0 = gentle, 1.0 = brutal
+  target_weaknesses_probability: 0.6
+```
+
+#### User Profiling
+```yaml
+user_profiling:
+  enabled: true
+  track_weaknesses: true
+  track_mistakes: true
+  track_embarrassments: true
+```
+
+#### Reactions
+```yaml
+reaction_system:
+  enabled: true
+  reaction_probability: 0.15
+  # 34 different reactions available
+```
+
+For complete configuration options, see [AUTONOMOUS_FEATURES.md](AUTONOMOUS_FEATURES.md).
+
+## Commands
+
+### User Commands
+- `/joke` - Generate contextual joke
+- `/joke <topic>` - Generate joke about topic
+- `/ask <question>` - Free-form AI request
+- Mention bot - Generate contextual response
+
+### Admin Commands (Private Chat Only)
+- `/reload` - Hot-reload configuration
+- `/comment <chat_id>` - Force autonomous comment
+
+## Switching AI Providers
+
+Simply change the `provider` in `config.yaml`:
+
+```yaml
+ai:
+  provider: "groq"  # Change to: groq, openrouter, or local
+```
+
+Then reload:
+- If running: Press Ctrl+C and restart
+- If using systemd: `sudo systemctl restart telegram-joke-bot`
+- If bot supports it: `/reload` command (admin only)
+
+## Production Deployment
+
+### Systemd Service
+
+1. Edit service file with your paths:
 ```bash
 nano systemd/telegram-joke-bot.service
 ```
 
-Update these lines:
-```ini
-User=YOUR_USERNAME  # Your Ubuntu username
-WorkingDirectory=/home/YOUR_USERNAME/telegram-joke-bot
-Environment="PATH=/home/YOUR_USERNAME/telegram-joke-bot/venv/bin"
-ExecStart=/home/YOUR_USERNAME/telegram-joke-bot/venv/bin/python bot.py
-```
-
-Install the service:
-
+2. Install and start:
 ```bash
-# Copy service file to systemd directory
 sudo cp systemd/telegram-joke-bot.service /etc/systemd/system/
-
-# Reload systemd daemon
 sudo systemctl daemon-reload
-
-# Enable service to start on boot
 sudo systemctl enable telegram-joke-bot
-
-# Start the service
 sudo systemctl start telegram-joke-bot
-
-# Check status
-sudo systemctl status telegram-joke-bot
 ```
 
-### 4. Monitor Logs
-
+3. Monitor:
 ```bash
-# View live logs
 sudo journalctl -u telegram-joke-bot -f
-
-# View recent logs
-sudo journalctl -u telegram-joke-bot -n 100
-
-# View logs in file
-tail -f logs/bot.log
 ```
-
-### 5. Manage the Service
-
-```bash
-# Stop the bot
-sudo systemctl stop telegram-joke-bot
-
-# Restart the bot
-sudo systemctl restart telegram-joke-bot
-
-# Check status
-sudo systemctl status telegram-joke-bot
-
-# Disable auto-start
-sudo systemctl disable telegram-joke-bot
-```
-
-## Switching AI Providers
-
-To switch from Groq to OpenRouter (or vice versa):
-
-1. Edit `.env` file:
-   ```bash
-   nano .env
-   ```
-
-2. Change `AI_PROVIDER`:
-   ```env
-   AI_PROVIDER=openrouter  # or "groq"
-   ```
-
-3. Restart the bot:
-   ```bash
-   # If running manually
-   # Press Ctrl+C and restart: python bot.py
-   
-   # If running as service
-   sudo systemctl restart telegram-joke-bot
-   ```
-
-The bot will automatically use the new provider's API key and model settings.
-
-## Usage Examples
-
-### Simple Random Joke
-```
-User: /joke
-Bot: [Tells a Russian joke based on recent conversation]
-```
-
-### Joke with Custom Context
-```
-User: /joke about cats and dogs
-Bot: [Tells a Russian joke about cats and dogs]
-```
-
-### Contextual Joke via Mention
-```
-User1: Я вчера купил новый компьютер
-User2: Какой?
-User1: MacBook Pro
-User3: @your_bot_name
-Bot: [Tells a Russian joke related to the MacBook conversation]
-```
-
-## Troubleshooting
-
-### Bot Not Responding
-
-1. Check if bot is running:
-   ```bash
-   sudo systemctl status telegram-joke-bot
-   ```
-
-2. Check logs for errors:
-   ```bash
-   sudo journalctl -u telegram-joke-bot -n 50
-   ```
-
-3. Verify configuration:
-   ```bash
-   cat .env  # Check if all values are set
-   ```
-
-### API Errors
-
-- **Groq rate limits**: Wait and retry, or switch to OpenRouter
-- **Invalid API key**: Double-check your API key in `.env`
-- **Network issues**: Check server internet connection
-
-### Bot Added to Channel but Not Working
-
-1. Ensure bot is an **administrator** in the channel
-2. Verify `CHANNEL_ID` is correct (should start with `-100`)
-3. Check bot username is correct (include the `@` symbol)
-
-### "No context available" Messages
-
-This is normal when:
-- Bot just started (no message history yet)
-- First message in a new conversation
-- All recent messages were commands (filtered out of context)
 
 ## Project Structure
 
 ```
 telegram-joke-bot/
-├── ai_providers/           # AI provider implementations
-│   ├── __init__.py        # Provider factory
-│   ├── base.py            # Abstract base class
-│   ├── groq_provider.py   # Groq implementation
-│   └── openrouter_provider.py  # OpenRouter implementation
-├── handlers/              # Message handlers
-│   └── message_handler.py # Main handler logic
-├── utils/                 # Utilities
-│   └── context_extractor.py  # Context extraction
-├── logs/                  # Log files
-├── systemd/              # Systemd service file
+├── ai_providers/          # AI provider implementations
+├── handlers/             # Message handlers
+├── utils/                # Utilities (profiling, commenting, reactions)
+├── logs/                 # Log files
+├── profiles/             # User profiles (auto-created)
+├── context_history/      # Conversation context (auto-created)
+├── systemd/              # Systemd service
 ├── bot.py                # Main application
-├── config.py             # Configuration management
-├── requirements.txt      # Python dependencies
-├── .env                  # Configuration (create from .env.example)
-├── .env.example          # Configuration template
-├── .gitignore           # Git exclusions
-└── README.md            # This file
+├── config.py             # Configuration loader
+├── config.yaml           # MAIN CONFIGURATION FILE
+├── requirements.txt      # Dependencies
+└── README.md             # This file
 ```
+
+## Features Documentation
+
+- [AUTONOMOUS_FEATURES.md](AUTONOMOUS_FEATURES.md) - Complete guide to autonomous features
+- [config.yaml](config.yaml) - Full configuration with comments
+
+## Troubleshooting
+
+### Bot Not Responding
+```bash
+# Check status
+sudo systemctl status telegram-joke-bot
+
+# View logs
+sudo journalctl -u telegram-joke-bot -n 50
+tail -f logs/bot.log
+```
+
+### Configuration Issues
+```bash
+# Test configuration loading
+python -c "from config import get_config; print('OK')"
+```
+
+### API Errors
+- Check API keys in `config.yaml`
+- Verify API endpoint is accessible
+- Check rate limits for your provider
+
+## Advanced Features
+
+### User Profiling
+The bot builds profiles of users including:
+- Conversation patterns
+- Technical/personal weaknesses
+- Common mistakes
+- Embarrassing moments
+- Contradictions
+
+Profiles are stored in `profiles/` and used for targeted roasting.
+
+### Autonomous Commenting
+The bot monitors conversations and:
+- Comments intelligently based on context
+- Targets user weaknesses for roasting
+- Adapts aggression level (configurable)
+- Learns from reactions
+
+### Smart Reactions
+- 34 different emoji reactions
+- Context-aware selection
+- Probability-based triggering
+- Rate limiting per chat
 
 ## Contributing
 
-Feel free to submit issues and enhancement requests!
+Contributions welcome! Please:
+1. Test changes locally
+2. Update documentation
+3. Follow existing code style
 
 ## License
 
@@ -352,8 +269,8 @@ This project is provided as-is for educational and personal use.
 
 ## Support
 
-For issues and questions:
-1. Check the logs: `sudo journalctl -u telegram-joke-bot -n 100`
-2. Verify configuration in `.env`
-3. Test with Groq first (easier setup, free tier)
-4. Review error messages in `logs/bot.log`
+For issues:
+1. Check logs: `tail -f logs/bot.log`
+2. Verify `config.yaml` settings
+3. Test with simple provider (Groq) first
+4. Review [AUTONOMOUS_FEATURES.md](AUTONOMOUS_FEATURES.md)

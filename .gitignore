@@ -1,5 +1,6 @@
-# Environment variables
+# Environment variables and config
 .env
+config.yaml
 
 # Python
 __pycache__/
@@ -36,8 +37,14 @@ env/
 *~
 
 # Logs
-logs/*.log
+logs/
 *.log
+
+# User profiles
+profiles/
+
+# Context history
+context_history/
 
 # OS
 .DS_Store
