@@ -55,6 +55,7 @@ class AutonomousCommentingConfig:
     comment_probability: float = 0.3
     min_time_between_comments_seconds: int = 120
     use_intelligent_decision: bool = True
+    use_ai_decision: bool = True
     prefer_replies: bool = True
     standalone_probability: float = 0.3
     roasting_enabled: bool = True
@@ -218,6 +219,7 @@ def load_yaml_config() -> YamlConfig:
             comment_probability=ac_data.get('comment_probability', 0.3),
             min_time_between_comments_seconds=ac_data.get('min_time_between_comments_seconds', 120),
             use_intelligent_decision=ac_data.get('use_intelligent_decision', True),
+            use_ai_decision=ac_data.get('use_ai_decision', True),
             prefer_replies=ac_data.get('prefer_replies', True),
             standalone_probability=ac_data.get('standalone_probability', 0.3),
             roasting_enabled=ac_data.get('roasting_enabled', True),
