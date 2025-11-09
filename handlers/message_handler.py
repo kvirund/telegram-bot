@@ -175,6 +175,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await handle_saveprofiles_command(update, context)
         return
     
+    # Check if it's a /regenerate command
+    if message.text.startswith('/regenerate'):
+        await handle_regenerate_command(update, context)
+        return
+    
     # In private chats, respond conversationally to all messages
     if is_private:
         await handle_private_conversation(update, context)
@@ -1226,6 +1231,138 @@ async def handle_setprompt_command(update: Update, context: ContextTypes.DEFAULT
         
     except Exception as e:
         logger.error(f"Error in /setprompt command: {e}")
+        await message.reply_text(
+            f"[X] Error: {str(e)}",
+            reply_to_message_id=message.message_id
+        )
+
+
+async def handle_regenerate_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /regenerate command to regenerate all profiles from context history.
+    
+    This uses current context history to re-enrich all user profiles with AI analysis.
+    Only administrators can use this command.
+    
+    Args:
+        update: Telegram update object
+        context: Telegram context object
+    """
+    if not update.message or not update.message.from_user:
+        return
+    
+    message = update.message
+    user_id = message.from_user.id
+    username = message.from_user.username or "Unknown"
+    
+    logger.info(f"User {user_id} (@{username}) requested /regenerate command")
+    
+    # Check if command is sent in private chat only
+    if message.chat.type != "private":
+        logger.warning(f"/regenerate command attempted in group chat {message.chat_id} by user {user_id}")
+        await message.reply_text(
+            "[X] This command can only be used in private chat with the bot.",
+            reply_to_message_id=message.message_id
+        )
+        return
+    
+    # Check admin privilege
+    if user_id not in config.admin_user_ids:
+        logger.warning(f"Unauthorized /regenerate attempt by user {user_id}")
+        await message.reply_text(
+            "[X] Only administrators can regenerate profiles.",
+            reply_to_message_id=message.message_id
+        )
+        return
+    
+    try:
+        await message.reply_text(
+            "[...] Starting profile regeneration from context history...",
+            reply_to_message_id=message.message_id
+        )
+        
+        # Get all chats from message history
+        all_chats = message_history.get_all_chat_ids()
+        
+        # Collect user messages
+        user_data = {}  # user_id -> messages list
+        
+        for chat_id in all_chats:
+            messages = message_history.get_recent_messages(chat_id, count=100)
+            if not messages:
+                continue
+            
+            for msg_data in messages:
+                msg_user_id = msg_data.get('user_id', 0)
+                text = msg_data.get('text', '')
+                
+                if msg_user_id == 0 or not text or text.startswith('/'):
+                    continue
+                
+                if msg_user_id not in user_data:
+                    user_data[msg_user_id] = []
+                user_data[msg_user_id].append(text)
+        
+        if not user_data:
+            await message.reply_text(
+                "[!] No user messages found in context history.",
+                reply_to_message_id=message.message_id
+            )
+            return
+        
+        # Process each user
+        processed = 0
+        skipped = 0
+        failed = 0
+        
+        status_msg = await message.reply_text(
+            f"[Processing] 0/{len(user_data)} users processed...",
+            reply_to_message_id=message.message_id
+        )
+        
+        for user_id, messages in user_data.items():
+            if len(messages) < 5:
+                skipped += 1
+                continue
+            
+            profile = profile_manager.load_profile(user_id)
+            messages_text = "\n".join(messages[:30])
+            
+            try:
+                await profile_manager.enrich_profile_with_ai(
+                    user_id=user_id,
+                    recent_messages=messages_text,
+                    ai_analyzer=ai_provider
+                )
+                profile_manager.save_profile(user_id)
+                processed += 1
+                
+                # Update status every 5 users
+                if processed % 5 == 0:
+                    await status_msg.edit_text(
+                        f"[Processing] {processed}/{len(user_data)} users processed..."
+                    )
+                
+            except Exception as e:
+                logger.error(f"Failed to regenerate profile for user {user_id}: {e}")
+                failed += 1
+        
+        result = (
+            f"[OK] Profile regeneration complete!\n\n"
+            f"Processed: {processed}\n"
+            f"Skipped (<5 messages): {skipped}\n"
+            f"Failed: {failed}\n"
+            f"Total: {len(user_data)}"
+        )
+        
+        await message.reply_text(
+            result,
+            reply_to_message_id=message.message_id
+        )
+        
+        logger.info(f"Profile regeneration completed by admin {user_id}: {processed} processed, {skipped} skipped, {failed} failed")
+        
+    except Exception as e:
+        logger.error(f"Error in /regenerate command: {e}")
         await message.reply_text(
             f"[X] Error: {str(e)}",
             reply_to_message_id=message.message_id
