@@ -960,8 +960,8 @@ async def handle_chats_command(update: Update, context: ContextTypes.DEFAULT_TYP
             )
             return
         
-        # Build response
-        response = f"💬 **Active Chats** ({len(all_chats)})\n\n"
+        # Build response using HTML instead of Markdown for better compatibility
+        response = f"💬 <b>Active Chats</b> ({len(all_chats)})\n\n"
         
         # Try to get chat information for each chat
         for chat_id in sorted(all_chats):
@@ -970,7 +970,7 @@ async def handle_chats_command(update: Update, context: ContextTypes.DEFAULT_TYP
                 chat = await context.bot.get_chat(chat_id)
                 chat_type = chat.type
                 
-                # Format chat name
+                # Format chat name (escape HTML special chars)
                 if chat_type == "private":
                     chat_name = f"{chat.first_name or 'Private'}"
                     if chat.username:
@@ -986,20 +986,24 @@ async def handle_chats_command(update: Update, context: ContextTypes.DEFAULT_TYP
                     chat_name = "Unknown"
                     chat_icon = "❓"
                 
+                # Escape HTML special characters in chat name
+                import html
+                chat_name = html.escape(chat_name)
+                
                 # Get message count
                 recent_messages = message_history.get_recent_messages(chat_id)
                 msg_count = len(recent_messages) if recent_messages else 0
                 
-                response += f"{chat_icon} **{chat_name}**\n"
-                response += f"   • ID: `{chat_id}`\n"
+                response += f"{chat_icon} <b>{chat_name}</b>\n"
+                response += f"   • ID: <code>{chat_id}</code>\n"
                 response += f"   • Type: {chat_type}\n"
                 response += f"   • Messages: {msg_count}\n\n"
                 
             except Exception as e:
                 # Chat might be inaccessible or bot was removed
                 logger.warning(f"Could not get info for chat {chat_id}: {e}")
-                response += f"❓ **Unknown Chat**\n"
-                response += f"   • ID: `{chat_id}`\n"
+                response += f"❓ <b>Unknown Chat</b>\n"
+                response += f"   • ID: <code>{chat_id}</code>\n"
                 response += f"   • Status: Inaccessible\n\n"
         
         # Send response (might be long, so check length)
@@ -1021,18 +1025,18 @@ async def handle_chats_command(update: Update, context: ContextTypes.DEFAULT_TYP
                     await message.reply_text(
                         part,
                         reply_to_message_id=message.message_id,
-                        parse_mode='Markdown'
+                        parse_mode='HTML'
                     )
                 else:
                     await message.reply_text(
                         part,
-                        parse_mode='Markdown'
+                        parse_mode='HTML'
                     )
         else:
             await message.reply_text(
                 response,
                 reply_to_message_id=message.message_id,
-                parse_mode='Markdown'
+                parse_mode='HTML'
             )
         
         logger.info(f"Chat list displayed for admin {user_id} ({len(all_chats)} chats)")
