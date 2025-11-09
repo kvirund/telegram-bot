@@ -265,6 +265,39 @@ class MessageHistory:
         
         return "\n".join(context_lines)
     
+    def get_user_messages(self, chat_id: int, user_id: int, count: int = 20) -> str:
+        """Get formatted messages from a specific user only.
+        
+        Args:
+            chat_id: Chat ID
+            user_id: User ID to filter messages for
+            count: Maximum number of messages to include
+            
+        Returns:
+            str: Formatted string of user's messages
+        """
+        if chat_id not in self.history:
+            return ""
+        
+        # Filter messages for this specific user
+        user_messages = [
+            msg for msg in self.history[chat_id]
+            if msg.get('user_id') == user_id
+        ]
+        
+        # Get most recent messages
+        recent = user_messages[-count:]
+        
+        # Format into context string (just the text, no username prefix since it's all one user)
+        message_lines = []
+        for msg_data in recent:
+            text = msg_data.get('text', '').strip()
+            if text and not text.startswith('/'):
+                # Don't truncate - we want full context for profiling
+                message_lines.append(text)
+        
+        return "\n".join(message_lines)
+    
     def cleanup_expired(self):
         """Remove expired messages from all chats."""
         import time

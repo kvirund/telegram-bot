@@ -89,25 +89,26 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 if current_profile.message_count % enrichment_interval == 0:
                     logger.info(f"[AI-ENRICH] Triggered for user {user_id} (@{username}) after {current_profile.message_count} messages")
                     
-                    # Get recent messages for context
-                    recent_messages = message_history.get_context(
+                    # Get recent messages FROM THIS USER ONLY for profile analysis
+                    user_messages = message_history.get_user_messages(
                         chat_id=chat_id,
-                        count=min(20, config.yaml_config.conversation_monitoring.context_window_size)
+                        user_id=user_id,
+                        count=min(30, config.yaml_config.conversation_monitoring.context_window_size)
                     )
                     
-                    if recent_messages:
+                    if user_messages:
                         # Run AI enrichment asynchronously
                         try:
                             await profile_manager.enrich_profile_with_ai(
                                 user_id=user_id,
-                                recent_messages=recent_messages,
+                                recent_messages=user_messages,
                                 ai_analyzer=ai_provider
                             )
                             logger.info(f"[AI-ENRICH] Completed successfully for user {user_id}")
                         except Exception as e:
                             logger.error(f"[AI-ENRICH] Failed for user {user_id}: {e}")
                     else:
-                        logger.warning(f"[AI-ENRICH] No message context available for user {user_id}")
+                        logger.warning(f"[AI-ENRICH] No messages available for user {user_id} in this chat")
                 else:
                     messages_until_enrichment = enrichment_interval - (current_profile.message_count % enrichment_interval)
                     logger.debug(f"[PROFILE] Update recorded for user {user_id}. AI enrichment in {messages_until_enrichment} messages")
