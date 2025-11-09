@@ -257,7 +257,12 @@ class MessageHistory:
         for msg_data in recent_messages:
             text = msg_data.get('text', '').strip()
             if text and not text.startswith('/'):
-                user_name = msg_data.get('first_name', 'Unknown')
+                # Use @username if available, otherwise fall back to first_name
+                username = msg_data.get('username', '')
+                if username:
+                    user_name = f"@{username}"
+                else:
+                    user_name = msg_data.get('first_name', 'Unknown')
                 # Truncate long messages
                 if len(text) > 200:
                     text = text[:200] + "..."
