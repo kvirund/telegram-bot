@@ -1122,6 +1122,8 @@ async def handle_setprompt_command(update: Update, context: ContextTypes.DEFAULT
         update: Telegram update object
         context: Telegram context object
     """
+    global config
+    
     if not update.message or not update.message.from_user:
         return
     
@@ -1195,9 +1197,6 @@ async def handle_setprompt_command(update: Update, context: ContextTypes.DEFAULT
         # Update prompt in config.yaml
         import yaml
         import os
-        
-        # Declare global before using
-        global config
         
         config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.yaml")
         
