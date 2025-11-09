@@ -52,6 +52,7 @@ user_profiling:
   enabled: true
   profile_directory: "profiles"
   max_profile_size_kb: 100
+  enrichment_interval_messages: 10  # Run AI enrichment every N messages from user
   
   # What to track
   track_topics: true
