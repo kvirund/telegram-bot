@@ -1195,6 +1195,10 @@ async def handle_setprompt_command(update: Update, context: ContextTypes.DEFAULT
         # Update prompt in config.yaml
         import yaml
         import os
+        
+        # Declare global before using
+        global config
+        
         config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.yaml")
         
         with open(config_path, 'r', encoding='utf-8') as f:
@@ -1210,7 +1214,6 @@ async def handle_setprompt_command(update: Update, context: ContextTypes.DEFAULT
         
         # Reload config
         from config import reload_config
-        global config
         config = reload_config()
         
         logger.info(f"Prompt '{prompt_type}' updated by admin {user_id}")
