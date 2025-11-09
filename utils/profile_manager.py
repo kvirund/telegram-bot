@@ -256,23 +256,28 @@ class ProfileManager:
         
         try:
             # Build analysis prompt
-            analysis_prompt = f"""Проанализируй следующие сообщения пользователя и выведи ТОЛЬКО JSON без дополнительного текста:
+            analysis_prompt = f"""Проанализируй следующие сообщения пользователя и извлеки информацию о его личности.
 
 Сообщения:
 {recent_messages[:1000]}
 
-Верни JSON в таком формате:
-{{
-  "interests": ["интерес1", "интерес2"],
-  "technical_weaknesses": ["слабость1"],
-  "personal_weaknesses": ["слабость2"],
-  "speaking_tone": "casual/formal/sarcastic",
-  "humor_type": "sarcastic/witty/silly/unknown",
-  "common_mistakes": ["ошибка1"],
-  "embarrassing_moments": ["момент1"]
-}}"""
+ВАЖНО: Анализируй РЕАЛЬНЫЕ сообщения выше и извлекай РЕАЛЬНУЮ информацию о пользователе.
+НЕ используй примеры - анализируй то, что реально видишь в сообщениях.
 
-            system_prompt = "Ты эксперт по анализу личности. Отвечай только валидным JSON без комментариев."
+Верни ТОЛЬКО валидный JSON без текста до или после:
+{{
+  "interests": ["список реальных интересов из сообщений, если есть"],
+  "technical_weaknesses": ["реальные технические проблемы, если упоминались"],
+  "personal_weaknesses": ["личные слабости, если видны"],
+  "speaking_tone": "casual или formal или sarcastic (оцени по стилю)",
+  "humor_type": "sarcastic или witty или silly или unknown (оцени по сообщениям)",
+  "common_mistakes": ["реальные ошибки или паттерны, если заметны"],
+  "embarrassing_moments": ["неловкие моменты, если были"]
+}}
+
+Если информации нет - оставь пустой массив []. НЕ придумывай данные."""
+
+            system_prompt = "Ты эксперт-психолог по анализу текстов. Анализируй ТОЛЬКО то, что реально видишь в сообщениях. Не придумывай данные. Отвечай ТОЛЬКО валидным JSON."
             
             # Get AI analysis
             response = await ai_analyzer.free_request(
