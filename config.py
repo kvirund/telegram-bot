@@ -1,4 +1,4 @@
-"""Configuration management for the Telegram Joke Bot."""
+"""Configuration management for the Telegram AI Assistant."""
 import os
 import yaml
 from dataclasses import dataclass, field
@@ -107,7 +107,7 @@ class ReactionSystemConfig:
 @dataclass
 class SystemPromptsConfig:
     """System prompts configuration."""
-    joke_generation: str = "You are a witty Russian joke generator."
+    joke_generation: str = "You are a witty AI assistant that can generate jokes and humorous content."
     conversation: str = "You are a helpful, witty AI assistant."
     autonomous_comment: str = "You are an observational bot."
     ai_decision: str = "You are a conversation analyst. Respond with YES or NO."
@@ -273,7 +273,7 @@ def load_yaml_config() -> YamlConfig:
         # Parse system_prompts section
         sp_data = yaml_data.get('system_prompts', {})
         system_prompts = SystemPromptsConfig(
-            joke_generation=sp_data.get('joke_generation', "You are a witty Russian joke generator."),
+            joke_generation=sp_data.get('joke_generation', "You are a witty AI assistant that can generate jokes and humorous content."),
             conversation=sp_data.get('conversation', "You are a helpful, witty AI assistant."),
             autonomous_comment=sp_data.get('autonomous_comment', "You are an observational bot."),
             ai_decision=sp_data.get('ai_decision', "You are a conversation analyst. Respond with YES or NO."),

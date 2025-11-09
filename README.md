@@ -1,6 +1,6 @@
-# Telegram Joke Bot
+# Telegram AI Assistant
 
-A production-ready Telegram bot with AI-powered features including contextual jokes, autonomous commenting with roasting, user profiling, and intelligent reactions.
+A production-ready Telegram bot with AI-powered features including contextual conversations, autonomous commenting with roasting, user profiling, and intelligent reactions.
 
 ## Features
 
@@ -185,13 +185,53 @@ sudo systemctl start telegram-joke-bot
 sudo journalctl -u telegram-joke-bot -f
 ```
 
+## Testing
+
+The project includes comprehensive unit tests with 81%+ code coverage.
+
+### Running Tests
+
+```bash
+# Run all tests
+python -m pytest
+
+# Run with coverage report
+python -m pytest --cov=. --cov-report=html
+
+# Run specific test file
+python -m pytest tests/unit/test_config.py -v
+```
+
+### Test Structure
+
+```
+tests/
+├── conftest.py           # Shared fixtures and configuration
+├── unit/                 # Unit tests
+│   ├── test_ai_providers.py    # AI provider tests (19 tests)
+│   ├── test_config.py          # Configuration tests (12 tests)
+│   ├── test_profile_manager.py # Profile management tests (17 tests)
+│   └── test_services.py        # Service class tests (8 tests)
+└── integration/          # Integration tests (future)
+```
+
+### Test Coverage
+
+- **AI Providers**: 68% (factory functions, all provider classes)
+- **Profile Management**: 88% (user profiles, AI enrichment, reactions)
+- **Configuration**: 88% (loading, validation, YAML parsing)
+- **Services**: ~70% (BotService, ProfileRegenerationService)
+- **Overall**: **81%** ✅
+
 ## Project Structure
 
 ```
 telegram-joke-bot/
 ├── ai_providers/          # AI provider implementations
 ├── handlers/             # Message handlers
+├── services/             # Business logic services
 ├── utils/                # Utilities (profiling, commenting, reactions)
+├── tests/                # Comprehensive test suite
 ├── logs/                 # Log files
 ├── profiles/             # User profiles (auto-created)
 ├── context_history/      # Conversation context (auto-created)
