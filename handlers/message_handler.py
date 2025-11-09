@@ -80,14 +80,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             
             # Update basic profile info
             profile_manager.update_profile_from_message(message)
-            logger.info(f"📊 Profile updated for user {user_id} (@{username}) - Message #{profile_manager.profiles[user_id].message_count}")
+            logger.info(f"[PROFILE] Updated for user {user_id} (@{username}) - Message #{profile_manager.profiles[user_id].message_count}")
             
             # Check if AI enrichment should be triggered
             current_profile = profile_manager.profiles.get(user_id)
             if current_profile:
                 enrichment_interval = config.yaml_config.user_profiling.enrichment_interval_messages
                 if current_profile.message_count % enrichment_interval == 0:
-                    logger.info(f"🧠 AI enrichment triggered for user {user_id} (@{username}) after {current_profile.message_count} messages")
+                    logger.info(f"[AI-ENRICH] Triggered for user {user_id} (@{username}) after {current_profile.message_count} messages")
                     
                     # Get recent messages for context
                     recent_messages = message_history.get_context(
@@ -103,19 +103,19 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                                 recent_messages=recent_messages,
                                 ai_analyzer=ai_provider
                             )
-                            logger.info(f"✅ AI enrichment completed for user {user_id}")
+                            logger.info(f"[AI-ENRICH] Completed successfully for user {user_id}")
                         except Exception as e:
-                            logger.error(f"❌ AI enrichment failed for user {user_id}: {e}")
+                            logger.error(f"[AI-ENRICH] Failed for user {user_id}: {e}")
                     else:
-                        logger.warning(f"⚠️ No message context available for AI enrichment of user {user_id}")
+                        logger.warning(f"[AI-ENRICH] No message context available for user {user_id}")
                 else:
                     messages_until_enrichment = enrichment_interval - (current_profile.message_count % enrichment_interval)
-                    logger.debug(f"📝 Profile update recorded for user {user_id}. AI enrichment in {messages_until_enrichment} messages")
+                    logger.debug(f"[PROFILE] Update recorded for user {user_id}. AI enrichment in {messages_until_enrichment} messages")
                 
                 # Save profile after update
                 profile_manager.save_profile(user_id)
         except Exception as e:
-            logger.error(f"❌ Error updating profile: {e}")
+            logger.error(f"[PROFILE] Error updating profile: {e}")
     
     # Store message in history for context extraction (both private and group chats)
     message_history.add_message(chat_id, message)

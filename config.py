@@ -71,6 +71,7 @@ class UserProfilingConfig:
     enabled: bool = True
     profile_directory: str = "profiles"
     max_profile_size_kb: int = 100
+    enrichment_interval_messages: int = 10
     track_topics: bool = True
     track_speaking_style: bool = True
     track_interests: bool = True
@@ -235,6 +236,7 @@ def load_yaml_config() -> YamlConfig:
             enabled=up_data.get('enabled', True),
             profile_directory=up_data.get('profile_directory', 'profiles'),
             max_profile_size_kb=up_data.get('max_profile_size_kb', 100),
+            enrichment_interval_messages=up_data.get('enrichment_interval_messages', 10),
             track_topics=up_data.get('track_topics', True),
             track_speaking_style=up_data.get('track_speaking_style', True),
             track_interests=up_data.get('track_interests', True),
