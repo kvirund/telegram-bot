@@ -1204,6 +1204,12 @@ async def check_and_make_autonomous_comment(update: Update, context: ContextType
         if not autonomous_commenter.should_comment(chat_id, bot_user_id):
             return
         
+        # Additional AI check if enabled
+        if config.yaml_config.autonomous_commenting.use_ai_decision:
+            if not await autonomous_commenter.should_comment_ai_check(chat_id, bot_user_id, ai_provider):
+                logger.info(f"AI decided not to comment in chat {chat_id}")
+                return
+        
         logger.info(f"Autonomous comment triggered for chat {chat_id}")
         
         # Generate comment

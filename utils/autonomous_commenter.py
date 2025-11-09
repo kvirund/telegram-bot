@@ -144,6 +144,69 @@ class AutonomousCommenter:
         
         return True
     
+    async def should_comment_ai_check(self, chat_id: int, bot_user_id: int, ai_provider) -> bool:
+        """Use AI to decide if it's a good time to comment.
+        
+        Args:
+            chat_id: Chat ID
+            bot_user_id: Bot's user ID
+            ai_provider: AI provider for decision
+            
+        Returns:
+            bool: True if AI thinks it's a good time to comment
+        """
+        ac_config = self.config.yaml_config.autonomous_commenting
+        
+        if not ac_config.use_ai_decision:
+            return True  # Skip AI check if disabled
+        
+        state = self._get_chat_state(chat_id)
+        recent_messages = [
+            msg for msg in state.recent_messages[-10:]
+            if msg.from_user and msg.from_user.id != bot_user_id
+        ]
+        
+        if not recent_messages:
+            return False
+        
+        # Format recent conversation
+        conversation = []
+        for msg in recent_messages:
+            if msg.text:
+                username = msg.from_user.first_name or msg.from_user.username or "User"
+                conversation.append(f"{username}: {msg.text}")
+        
+        conversation_text = "\n".join(conversation)
+        
+        prompt = f"""Analyze this group chat conversation and decide if it's a good time for a bot to chime in with a witty comment.
+
+CONVERSATION:
+{conversation_text}
+
+Consider:
+- Is the conversation natural and flowing?
+- Would a bot comment disrupt or enhance it?
+- Is there a good opening for humor/observation?
+- Are people actively engaged?
+
+Respond with ONLY "YES" or "NO" (one word)."""
+        
+        try:
+            response = await ai_provider.free_request(
+                user_message=prompt,
+                system_message="You are a conversation analyst. Respond with only YES or NO."
+            )
+            
+            decision = response.strip().upper()
+            should_comment = "YES" in decision or "ДА" in decision
+            
+            logger.info(f"AI decision for chat {chat_id}: {'comment' if should_comment else 'wait'} (response: {decision})")
+            return should_comment
+            
+        except Exception as e:
+            logger.error(f"Error in AI decision check: {e}")
+            return True  # Default to yes if AI check fails
+    
     def _is_good_time_to_comment(self, state: ChatState, bot_user_id: int) -> bool:
         """Intelligent check if it's a good time to comment.
         
@@ -174,15 +237,28 @@ class AutonomousCommenter:
         if len(recent_users) >= 2:
             return True
         
-        # Good time: someone said something roast-worthy
+        # Good time: someone said something roast-worthy (English & Russian keywords)
         for msg in recent[-3:]:
             if msg.text:
                 text_lower = msg.text.lower()
-                # Look for opportunities (mistakes, questions, complaints)
-                if any(word in text_lower for word in ['help', 'error', 'bug', 'problem', 'why', 'how']):
+                # English keywords
+                english_keywords = ['help', 'error', 'bug', 'problem', 'why', 'how', 'what', 'when']
+                # Russian keywords
+                russian_keywords = ['помощь', 'ошибка', 'баг', 'проблема', 'почему', 'как', 'что', 'когда', 
+                                   'помогите', 'не работает', 'сломалось', 'непонятно']
+                
+                all_keywords = english_keywords + russian_keywords
+                if any(word in text_lower for word in all_keywords):
                     return True
-                # Look for typos (repeated chars, common mistakes)
-                if '???' in text_lower or any(char * 3 in msg.text for char in 'abcdefghijklmnopqrstuvwxyz'):
+                
+                # Look for typos (repeated chars in both Latin and Cyrillic)
+                if '???' in text_lower:
+                    return True
+                # Latin repeated chars
+                if any(char * 3 in msg.text for char in 'abcdefghijklmnopqrstuvwxyz'):
+                    return True
+                # Cyrillic repeated chars
+                if any(char * 3 in msg.text for char in 'абвгдежзийклмнопрстуфхцчшщъыьэюя'):
                     return True
         
         return True

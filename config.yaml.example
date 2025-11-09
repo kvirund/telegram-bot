@@ -35,6 +35,7 @@ autonomous_commenting:
   comment_probability: 0.3  # 30% chance when criteria met
   min_time_between_comments_seconds: 120
   use_intelligent_decision: true
+  use_ai_decision: true  # Use AI to decide if it's a good time to comment
   
   # Message delivery
   prefer_replies: true  # Prefer replying to messages when relevant
