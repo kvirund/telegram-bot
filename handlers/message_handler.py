@@ -902,8 +902,8 @@ async def handle_profile_command(update: Update, context: ContextTypes.DEFAULT_T
         if profile.embarrassing_moments:
             profile_text += f"**Embarrassments:** {len(profile.embarrassing_moments)} recorded\n\n"
         
-        # Roasting stats
-        if profile.roasting_history.successful_roasts > 0:
+        # Roasting stats (check if attribute exists for backward compatibility)
+        if hasattr(profile, 'roasting_history') and profile.roasting_history.successful_roasts > 0:
             profile_text += f"**Roasting Stats:**\n"
             profile_text += f"• Successful: {profile.roasting_history.successful_roasts}\n"
             profile_text += f"• Last roasted: {profile.roasting_history.last_roast_date or 'Never'}\n"
