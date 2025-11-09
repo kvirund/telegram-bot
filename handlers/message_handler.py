@@ -167,6 +167,10 @@ async def handle_joke_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     message = update.message
     chat_id = message.chat_id
+    user_id = message.from_user.id if message.from_user else 0
+    username = message.from_user.username if message.from_user else "Unknown"
+    
+    logger.info(f"User {user_id} (@{username}) requested /joke command in chat {chat_id}")
     
     try:
         # Parse command and extract context if provided
@@ -224,6 +228,10 @@ async def handle_ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     message = update.message
     chat_id = message.chat_id
+    user_id = message.from_user.id if message.from_user else 0
+    username = message.from_user.username if message.from_user else "Unknown"
+    
+    logger.info(f"User {user_id} (@{username}) requested /ask command in chat {chat_id}")
     
     try:
         # Parse command
@@ -309,6 +317,9 @@ async def handle_reload_command(update: Update, context: ContextTypes.DEFAULT_TY
     
     message = update.message
     user_id = message.from_user.id
+    username = message.from_user.username or "Unknown"
+    
+    logger.info(f"User {user_id} (@{username}) requested /reload command")
     
     # Check if command is sent in private chat only
     if message.chat.type != "private":
@@ -400,6 +411,9 @@ async def handle_comment_command(update: Update, context: ContextTypes.DEFAULT_T
     
     message = update.message
     user_id = message.from_user.id
+    username = message.from_user.username or "Unknown"
+    
+    logger.info(f"User {user_id} (@{username}) requested /comment command")
     
     # Check if command is sent in private chat only
     if message.chat.type != "private":
@@ -529,24 +543,26 @@ async def handle_help_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     user_id = message.from_user.id
     username = message.from_user.username or message.from_user.first_name or "User"
     
+    logger.info(f"User {user_id} ({username}) requested /help command")
+    
     # Determine privilege level
     is_admin = user_id in config.admin_user_ids
     access_level = "Administrator" if is_admin else "User"
     
-    # Build help message
-    help_text = f"🤖 **Telegram Joke Bot Help**\n\n"
-    help_text += f"👤 **Your Access Level:** {access_level}\n"
-    help_text += f"🆔 **Your ID:** `{user_id}`\n\n"
+    # Build help message (using HTML instead of Markdown to avoid parsing issues)
+    help_text = "🤖 <b>Telegram Joke Bot Help</b>\n\n"
+    help_text += f"👤 <b>Your Access Level:</b> {access_level}\n"
+    help_text += f"🆔 <b>Your ID:</b> <code>{user_id}</code>\n\n"
     
     # Basic commands (available to all)
-    help_text += "📋 **Available Commands:**\n\n"
-    help_text += "**Jokes & Conversation:**\n"
+    help_text += "📋 <b>Available Commands:</b>\n\n"
+    help_text += "<b>Jokes &amp; Conversation:</b>\n"
     help_text += "/joke - Generate Russian joke from context\n"
-    help_text += "/joke <topic> - Generate joke about topic\n"
-    help_text += "/ask <question> - Free-form AI request\n"
+    help_text += "/joke &lt;topic&gt; - Generate joke about topic\n"
+    help_text += "/ask &lt;question&gt; - Free-form AI request\n"
     help_text += "/help - Show this help message\n\n"
     
-    help_text += "**Bot Interaction:**\n"
+    help_text += "<b>Bot Interaction:</b>\n"
     help_text += "• Mention bot in group chat for contextual response\n"
     help_text += "• Bot autonomously comments in groups\n"
     help_text += "• Bot adds reactions to messages\n"
@@ -554,28 +570,28 @@ async def handle_help_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     # Admin commands (only for administrators)
     if is_admin:
-        help_text += "🔐 **Admin Commands:**\n"
+        help_text += "🔐 <b>Admin Commands:</b>\n"
         help_text += "/reload - Reload configuration (private chat only)\n"
-        help_text += "/comment <chat_id> - Force comment in chat\n"
+        help_text += "/comment &lt;chat_id&gt; - Force comment in chat\n"
         help_text += "/context [chat_id] - Clear/reset chat context\n"
-        help_text += "/profile <user> - Show user profile\n"
+        help_text += "/profile &lt;user&gt; - Show user profile\n"
         help_text += "/chats - List all active chats\n\n"
         
-        help_text += "**Profile Command Usage:**\n"
+        help_text += "<b>Profile Command Usage:</b>\n"
         help_text += "• /profile @username\n"
         help_text += "• /profile user_id\n"
         help_text += "• /profile FirstName\n\n"
     
-    help_text += "ℹ️ **Features:**\n"
+    help_text += "ℹ️ <b>Features:</b>\n"
     help_text += "• Context-aware responses\n"
-    help_text += "• User profiling & weakness tracking\n"
+    help_text += "• User profiling &amp; weakness tracking\n"
     help_text += "• Autonomous roasting (if enabled)\n"
     help_text += "• Multi-language support\n"
     
     await message.reply_text(
         help_text,
         reply_to_message_id=message.message_id,
-        parse_mode='Markdown'
+        parse_mode='HTML'
     )
     logger.info(f"Sent help to user {user_id} ({username}) with {access_level} level")
 
@@ -596,7 +612,10 @@ async def handle_context_command(update: Update, context: ContextTypes.DEFAULT_T
     
     message = update.message
     user_id = message.from_user.id
+    username = message.from_user.username or "Unknown"
     current_chat_id = message.chat_id
+    
+    logger.info(f"User {user_id} (@{username}) requested /context command in chat {current_chat_id}")
     
     try:
         # Parse command
@@ -673,6 +692,9 @@ async def handle_profile_command(update: Update, context: ContextTypes.DEFAULT_T
     
     message = update.message
     user_id = message.from_user.id
+    username = message.from_user.username or "Unknown"
+    
+    logger.info(f"User {user_id} (@{username}) requested /profile command")
     
     # Check admin privilege
     if user_id not in config.admin_user_ids:
@@ -819,6 +841,9 @@ async def handle_chats_command(update: Update, context: ContextTypes.DEFAULT_TYP
     
     message = update.message
     user_id = message.from_user.id
+    username = message.from_user.username or "Unknown"
+    
+    logger.info(f"User {user_id} (@{username}) requested /chats command")
     
     # Check admin privilege
     if user_id not in config.admin_user_ids:
