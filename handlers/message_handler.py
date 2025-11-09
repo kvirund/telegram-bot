@@ -897,48 +897,29 @@ async def handle_profile_command(update: Update, context: ContextTypes.DEFAULT_T
             )
             return
         
-        # Build profile display
-        profile_text = f"👤 **User Profile**\n\n"
-        profile_text += f"🔍 **Found by:** {search_method}\n\n"
-        profile_text += f"**Basic Info:**\n"
-        profile_text += f"• ID: `{profile.user_id}`\n"
-        profile_text += f"• Name: {profile.first_name or 'N/A'}\n"
-        profile_text += f"• Username: @{profile.username or 'N/A'}\n"
-        profile_text += f"• Language: {profile.language_preference or 'Unknown'}\n"
-        profile_text += f"• Messages: {profile.message_count}\n\n"
+        # Use AI to generate comprehensive, human-readable profile
+        language = profile.language_preference or 'ru'
         
-        # Interests
-        if profile.interests:
-            profile_text += f"**Interests:** {', '.join(profile.interests[:5])}\n\n"
-        
-        # Weaknesses
-        if profile.weaknesses.technical or profile.weaknesses.personal:
-            profile_text += f"**Weaknesses:**\n"
-            if profile.weaknesses.technical:
-                profile_text += f"• Technical: {', '.join(profile.weaknesses.technical[:3])}\n"
-            if profile.weaknesses.personal:
-                profile_text += f"• Personal: {', '.join(profile.weaknesses.personal[:3])}\n"
-            profile_text += "\n"
-        
-        # Patterns
-        if profile.patterns.common_mistakes:
-            profile_text += f"**Common Mistakes:** {', '.join(profile.patterns.common_mistakes[:3])}\n\n"
-        
-        # Embarrassments
-        if profile.embarrassing_moments:
-            profile_text += f"**Embarrassments:** {len(profile.embarrassing_moments)} recorded\n\n"
-        
-        # Roasting stats (check if attribute exists for backward compatibility)
-        if hasattr(profile, 'roasting_history') and profile.roasting_history.successful_roasts > 0:
-            profile_text += f"**Roasting Stats:**\n"
-            profile_text += f"• Successful: {profile.roasting_history.successful_roasts}\n"
-            profile_text += f"• Last roasted: {profile.roasting_history.last_roast_date or 'Never'}\n"
-        
-        await message.reply_text(
-            profile_text,
-            reply_to_message_id=message.message_id,
-            parse_mode='Markdown'
-        )
+        try:
+            profile_summary = await _generate_ai_profile_summary(profile, language)
+            
+            await message.reply_text(
+                profile_summary,
+                reply_to_message_id=message.message_id,
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            logger.error(f"Error generating AI profile summary: {e}")
+            # Fallback to basic display
+            profile_text = f"👤 **User: {profile.first_name}** (@{profile.username})\n"
+            profile_text += f"🆔 ID: `{profile.user_id}`\n"
+            profile_text += f"📊 Messages: {profile.message_count}\n"
+            
+            await message.reply_text(
+                profile_text,
+                reply_to_message_id=message.message_id,
+                parse_mode='Markdown'
+            )
         logger.info(f"Profile displayed for user {profile.user_id} by admin {user_id}")
         
     except Exception as e:
@@ -1424,6 +1405,86 @@ async def check_and_add_reaction(update: Update, context: ContextTypes.DEFAULT_T
         logger.error(f"Reaction API not supported: {e}. Upgrade python-telegram-bot to >= 20.0")
     except Exception as e:
         logger.error(f"Error adding reaction: {e}", exc_info=True)
+
+
+async def _generate_ai_profile_summary(profile, language: str) -> str:
+    """Generate comprehensive AI profile summary in target language.
+    
+    Args:
+        profile: UserProfile object
+        language: Target language ('ru' or 'en')
+        
+    Returns:
+        str: Formatted profile summary
+    """
+    # Prepare profile data as JSON for AI
+    import json
+    profile_data = {
+        "basic_info": {
+            "user_id": profile.user_id,
+            "username": profile.username,
+            "first_name": profile.first_name,
+            "message_count": profile.message_count,
+            "language": profile.language_preference
+        },
+        "interests": profile.interests,
+        "speaking_style": {
+            "tone": profile.speaking_style.tone,
+            "vocabulary": profile.speaking_style.vocabulary_level,
+            "emoji_usage": profile.speaking_style.emoji_usage
+        },
+        "humor_type": profile.humor_type,
+        "weaknesses": {
+            "technical": profile.weaknesses.technical,
+            "personal": profile.weaknesses.personal
+        },
+        "patterns": {
+            "common_mistakes": profile.patterns.common_mistakes,
+            "embarrassing_moments": profile.embarrassing_moments
+        }
+    }
+    
+    # Build AI prompt
+    if language == 'ru':
+        prompt = f"""Создай подробное, читаемое описание профиля пользователя на основе этих данных:
+
+{json.dumps(profile_data, ensure_ascii=False, indent=2)}
+
+Создай ПОЛНЫЙ психологический портрет пользователя в свободной форме. Включи:
+- Краткую характеристику личности
+- Интересы и увлечения
+- Стиль общения и юмор
+- Технические и личные слабости
+- Характерные ошибки и паттерны поведения
+- Забавные или неловкие моменты
+
+Пиши естественно и занимательно, как будто описываешь знакомого человека. Используй эмодзи.
+Формат Markdown. Начни с "👤 **{profile.first_name}**"."""
+    else:
+        prompt = f"""Create a detailed, readable profile description based on this data:
+
+{json.dumps(profile_data, ensure_ascii=False, indent=2)}
+
+Create a FULL psychological portrait of the user in narrative form. Include:
+- Brief personality characterization
+- Interests and hobbies
+- Communication style and humor
+- Technical and personal weaknesses
+- Characteristic mistakes and behavior patterns  
+- Funny or awkward moments
+
+Write naturally and engagingly, as if describing an acquaintance. Use emoji.
+Markdown format. Start with "👤 **{profile.first_name}**"."""
+    
+    try:
+        summary = await ai_provider.free_request(
+            user_message=prompt,
+            system_message="You are a skilled profiler. Create comprehensive, engaging profiles."
+        )
+        return summary
+    except Exception as e:
+        logger.error(f"Error generating AI summary: {e}")
+        raise
 
 
 async def send_joke_response(message, joke: str) -> None:
