@@ -1276,6 +1276,11 @@ async def check_and_add_reaction(update: Update, context: ContextTypes.DEFAULT_T
         # Choose appropriate reaction
         reaction = reaction_manager.choose_reaction(message.text)
         
+        # Check if set_message_reaction is available (requires python-telegram-bot >= 20.0)
+        if not hasattr(context.bot, 'set_message_reaction'):
+            logger.warning("Reaction API not available in your python-telegram-bot version. Please upgrade to >= 20.0 for reaction support.")
+            return
+        
         # Add reaction to message
         await context.bot.set_message_reaction(
             chat_id=chat_id,
@@ -1286,8 +1291,10 @@ async def check_and_add_reaction(update: Update, context: ContextTypes.DEFAULT_T
         # Mark that we reacted
         reaction_manager.mark_reacted(chat_id)
         
-        logger.info(f"Added reaction {reaction} to message {message.message_id} in chat {chat_id}")
+        logger.info(f"Added reaction to message {message.message_id} in chat {chat_id}")
         
+    except AttributeError as e:
+        logger.error(f"Reaction API not supported: {e}. Upgrade python-telegram-bot to >= 20.0")
     except Exception as e:
         logger.error(f"Error adding reaction: {e}", exc_info=True)
 
