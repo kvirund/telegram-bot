@@ -602,6 +602,10 @@ def _build_russian_help(user_id: int, is_admin: bool) -> str:
     help_text += f"👤 <b>Ваш уровень доступа:</b> {access_level}\n"
     help_text += f"🆔 <b>Ваш ID:</b> <code>{user_id}</code>\n\n"
     
+    # AI Provider info
+    help_text += f"🤖 <b>AI Провайдер:</b> {config.ai_provider.upper()}\n"
+    help_text += f"📊 <b>Модель:</b> {config.model_name}\n\n"
+    
     # Основные команды
     help_text += "📋 <b>Доступные команды:</b>\n\n"
     help_text += "<b>Шутки и разговор:</b>\n"
@@ -612,8 +616,30 @@ def _build_russian_help(user_id: int, is_admin: bool) -> str:
     
     help_text += "<b>Взаимодействие с ботом:</b>\n"
     help_text += "• Упомяните бота в группе для ответа\n"
-    help_text += "• Бот автономно комментирует в группах\n"
-    help_text += "• Бот добавляет реакции на сообщения\n"
+    
+    # Dynamic features based on config
+    if config.yaml_config.autonomous_commenting.enabled:
+        help_text += "• ✅ Бот автономно комментирует в группах\n"
+        if config.yaml_config.autonomous_commenting.roasting_enabled:
+            aggression = int(config.yaml_config.autonomous_commenting.roasting_aggression * 100)
+            help_text += f"  - Режим роастинга: {aggression}% агрессии\n"
+        if config.yaml_config.autonomous_commenting.use_ai_decision:
+            help_text += "  - Использует AI для решений\n"
+    else:
+        help_text += "• ❌ Автономные комментарии отключены\n"
+    
+    if config.yaml_config.reaction_system.enabled and config.yaml_config.reaction_system.add_own_reactions:
+        help_text += f"• ✅ Бот добавляет реакции ({int(config.yaml_config.reaction_system.reaction_probability * 100)}% шанс)\n"
+    else:
+        help_text += "• ❌ Реакции отключены\n"
+    
+    if config.yaml_config.user_profiling.enabled:
+        help_text += "• ✅ Профилирование пользователей активно\n"
+        help_text += "  - AI анализ личности\n"
+        help_text += "  - Отслеживание слабостей\n"
+    else:
+        help_text += "• ❌ Профилирование отключено\n"
+    
     help_text += "• Приватный чат для разговоров\n\n"
     
     # Админские команды
