@@ -164,6 +164,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await handle_chats_command(update, context)
         return
     
+    # Check if it's a /setprompt command
+    if message.text.startswith('/setprompt'):
+        await handle_setprompt_command(update, context)
+        return
+    
+    # Check if it's a /saveprofiles command
+    if message.text.startswith('/saveprofiles'):
+        await handle_saveprofiles_command(update, context)
+        return
+    
     # In private chats, respond conversationally to all messages
     if is_private:
         await handle_private_conversation(update, context)
@@ -687,12 +697,14 @@ def _build_russian_help(user_id: int, is_admin: bool) -> str:
         help_text += "/comment &lt;chat_id&gt; - Принудительный комментарий\n"
         help_text += "/context [chat_id] - Очистить контекст чата\n"
         help_text += "/profile &lt;пользователь&gt; - Показать профиль\n"
-        help_text += "/chats - Список всех активных чатов\n\n"
+        help_text += "/chats - Список всех активных чатов\n"
+        help_text += "/setprompt [тип] [промпт] - Изменить системные промпты\n"
+        help_text += "/saveprofiles - Сохранить все профили на диск\n\n"
         
         help_text += "<b>Примеры использования:</b>\n"
         help_text += "• /profile @username или /profile 123456789\n"
         help_text += "• /comment -1001234567890\n"
-        help_text += "• /context -1001234567890\n\n"
+        help_text += "• /setprompt joke_generation Новый промпт\n\n"
     
     help_text += "ℹ️ <b>Возможности:</b>\n"
     help_text += "• Контекстные ответы\n"
@@ -740,12 +752,13 @@ def _build_english_help(user_id: int, is_admin: bool) -> str:
         help_text += "/comment &lt;chat_id&gt; - Force comment\n"
         help_text += "/context [chat_id] - Clear chat context\n"
         help_text += "/profile &lt;user&gt; - Show user profile\n"
-        help_text += "/chats - List all active chats\n\n"
+        help_text += "/chats - List all active chats\n"
+        help_text += "/setprompt [type] [prompt] - Modify system prompts\n"
+        help_text += "/saveprofiles - Force save all profiles\n\n"
         
-        help_text += "<b>Profile Command Usage:</b>\n"
-        help_text += "• /profile @username\n"
-        help_text += "• /profile user_id\n"
-        help_text += "• /profile FirstName\n\n"
+        help_text += "<b>Usage Examples:</b>\n"
+        help_text += "• /profile @username or /profile 123456789\n"
+        help_text += "• /setprompt joke_generation New prompt text\n\n"
     
     help_text += "ℹ️ <b>Features:</b>\n"
     help_text += "• Context-aware responses\n"
@@ -1090,6 +1103,210 @@ async def handle_chats_command(update: Update, context: ContextTypes.DEFAULT_TYP
         logger.error(f"Error in /chats command: {e}")
         await message.reply_text(
             f"❌ Error: {str(e)}",
+            reply_to_message_id=message.message_id
+        )
+
+
+async def handle_setprompt_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /setprompt command to modify system prompts.
+    
+    Usage:
+    - /setprompt - Show current prompts and available prompt types
+    - /setprompt <type> <new_prompt> - Update a specific prompt
+    
+    Available types: joke_generation, conversation, autonomous_comment, ai_decision
+    
+    Only administrators can use this command.
+    
+    Args:
+        update: Telegram update object
+        context: Telegram context object
+    """
+    if not update.message or not update.message.from_user:
+        return
+    
+    message = update.message
+    user_id = message.from_user.id
+    username = message.from_user.username or "Unknown"
+    
+    logger.info(f"User {user_id} (@{username}) requested /setprompt command")
+    
+    # Check if command is sent in private chat only
+    if message.chat.type != "private":
+        logger.warning(f"/setprompt command attempted in group chat {message.chat_id} by user {user_id}")
+        await message.reply_text(
+            "[X] This command can only be used in private chat with the bot.",
+            reply_to_message_id=message.message_id
+        )
+        return
+    
+    # Check admin privilege
+    if user_id not in config.admin_user_ids:
+        logger.warning(f"Unauthorized /setprompt attempt by user {user_id}")
+        await message.reply_text(
+            "[X] Only administrators can modify system prompts.",
+            reply_to_message_id=message.message_id
+        )
+        return
+    
+    try:
+        # Parse command
+        command_text = message.text.strip()
+        parts = command_text.split(maxsplit=2)
+        
+        if len(parts) < 2:
+            # Show current prompts
+            current_prompts = config.yaml_config.system_prompts
+            response = "[i] Current System Prompts:\n\n"
+            response += f"1. joke_generation:\n{current_prompts.joke_generation[:100]}...\n\n"
+            response += f"2. conversation:\n{current_prompts.conversation[:100]}...\n\n"
+            response += f"3. autonomous_comment:\n{current_prompts.autonomous_comment[:100]}...\n\n"
+            response += f"4. ai_decision:\n{current_prompts.ai_decision[:100]}...\n\n"
+            response += "Usage: /setprompt <type> <new_prompt>\n"
+            response += "Example: /setprompt joke_generation Your new prompt here"
+            
+            await message.reply_text(
+                response,
+                reply_to_message_id=message.message_id
+            )
+            return
+        
+        if len(parts) < 3:
+            await message.reply_text(
+                "[X] Missing prompt text.\n"
+                "Usage: /setprompt <type> <new_prompt>",
+                reply_to_message_id=message.message_id
+            )
+            return
+        
+        prompt_type = parts[1].lower()
+        new_prompt = parts[2]
+        
+        # Validate prompt type
+        valid_types = ['joke_generation', 'conversation', 'autonomous_comment', 'ai_decision']
+        if prompt_type not in valid_types:
+            await message.reply_text(
+                f"[X] Invalid prompt type: {prompt_type}\n"
+                f"Valid types: {', '.join(valid_types)}",
+                reply_to_message_id=message.message_id
+            )
+            return
+        
+        # Update prompt in config.yaml
+        import yaml
+        import os
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.yaml")
+        
+        with open(config_path, 'r', encoding='utf-8') as f:
+            yaml_data = yaml.safe_load(f)
+        
+        if 'system_prompts' not in yaml_data:
+            yaml_data['system_prompts'] = {}
+        
+        yaml_data['system_prompts'][prompt_type] = new_prompt
+        
+        with open(config_path, 'w', encoding='utf-8') as f:
+            yaml.dump(yaml_data, f, allow_unicode=True, default_flow_style=False)
+        
+        # Reload config
+        from config import reload_config
+        global config
+        config = reload_config()
+        
+        logger.info(f"Prompt '{prompt_type}' updated by admin {user_id}")
+        
+        await message.reply_text(
+            f"[OK] Prompt '{prompt_type}' updated successfully!\n\n"
+            f"New prompt (first 200 chars):\n{new_prompt[:200]}{'...' if len(new_prompt) > 200 else ''}",
+            reply_to_message_id=message.message_id
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in /setprompt command: {e}")
+        await message.reply_text(
+            f"[X] Error: {str(e)}",
+            reply_to_message_id=message.message_id
+        )
+
+
+async def handle_saveprofiles_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /saveprofiles command to force save all profiles to disk.
+    
+    This immediately saves all in-memory profiles to disk without waiting
+    for the auto-save interval. Useful for ensuring data persistence.
+    
+    Only administrators can use this command.
+    
+    Args:
+        update: Telegram update object
+        context: Telegram context object
+    """
+    if not update.message or not update.message.from_user:
+        return
+    
+    message = update.message
+    user_id = message.from_user.id
+    username = message.from_user.username or "Unknown"
+    
+    logger.info(f"User {user_id} (@{username}) requested /saveprofiles command")
+    
+    # Check if command is sent in private chat only
+    if message.chat.type != "private":
+        logger.warning(f"/saveprofiles command attempted in group chat {message.chat_id} by user {user_id}")
+        await message.reply_text(
+            "[X] This command can only be used in private chat with the bot.",
+            reply_to_message_id=message.message_id
+        )
+        return
+    
+    # Check admin privilege
+    if user_id not in config.admin_user_ids:
+        logger.warning(f"Unauthorized /saveprofiles attempt by user {user_id}")
+        await message.reply_text(
+            "[X] Only administrators can force save profiles.",
+            reply_to_message_id=message.message_id
+        )
+        return
+    
+    try:
+        # Get profile count before saving
+        profile_count = len(profile_manager.profiles)
+        
+        if profile_count == 0:
+            await message.reply_text(
+                "[!] No profiles in memory to save.",
+                reply_to_message_id=message.message_id
+            )
+            return
+        
+        # Save all profiles
+        profile_manager.save_all_profiles()
+        
+        logger.info(f"Forced save of {profile_count} profiles by admin {user_id}")
+        
+        # Build response with profile summary
+        response = f"[OK] Successfully saved {profile_count} profiles to disk!\n\n"
+        response += "Top 5 most active users:\n"
+        
+        # Sort profiles by message count
+        sorted_profiles = sorted(
+            profile_manager.profiles.items(),
+            key=lambda x: x[1].message_count,
+            reverse=True
+        )[:5]
+        
+        for user_id_prof, profile in sorted_profiles:
+            response += f"- {profile.first_name} (@{profile.username}): {profile.message_count} messages\n"
+        
+        await message.reply_text(
+            response,
+            reply_to_message_id=message.message_id
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in /saveprofiles command: {e}")
+        await message.reply_text(
+            f"[X] Error saving profiles: {str(e)}",
             reply_to_message_id=message.message_id
         )
 
