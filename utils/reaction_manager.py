@@ -71,27 +71,41 @@ class ReactionManager:
             str: Emoji reaction
         """
         text_lower = message_text.lower()
+        reaction = None
+        reason = "random"
         
         # Simple heuristic-based selection
         if any(word in text_lower for word in ['lol', 'haha', 'lmao', 'funny', 'joke', '😂', '🤣']):
-            return "😂"
+            reaction = "😂"
+            reason = "humor detected"
         elif any(word in text_lower for word in ['wtf', 'wow', 'omg', '!', 'shocking']):
-            return "😱"
+            reaction = "😱"
+            reason = "surprise detected"
         elif any(word in text_lower for word in ['good', 'great', 'awesome', 'perfect', 'nice', '👍']):
-            return "👍"
+            reaction = "👍"
+            reason = "positive sentiment"
         elif any(word in text_lower for word in ['fire', 'amazing', 'incredible', '🔥']):
-            return "🔥"
+            reaction = "🔥"
+            reason = "enthusiasm detected"
         elif any(word in text_lower for word in ['hmm', 'think', '?', 'question']):
-            return "🤔"
+            reaction = "🤔"
+            reason = "question/thinking"
         elif any(word in text_lower for word in ['watch', 'see', 'look', '👀']):
-            return "👀"
+            reaction = "👀"
+            reason = "attention keyword"
         elif any(word in text_lower for word in ['100', 'exactly', 'agree', 'true']):
-            return "💯"
+            reaction = "💯"
+            reason = "agreement"
         elif any(word in text_lower for word in ['right', 'correct', 'spot on', 'exactly']):
-            return "🎯"
+            reaction = "🎯"
+            reason = "accuracy"
         else:
             # Random selection from available types
-            return random.choice(self.config.yaml_config.reaction_system.reaction_types)
+            reaction = random.choice(self.config.yaml_config.reaction_system.reaction_types)
+            reason = "random choice"
+        
+        logger.info(f"Selected reaction {reaction} ({reason}) for message: {message_text[:50]}...")
+        return reaction
 
 
 # Global instance
