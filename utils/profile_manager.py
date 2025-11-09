@@ -269,38 +269,35 @@ class ProfileManager:
         profile = self.load_profile(user_id)
         
         try:
-            # Build analysis prompt
-            analysis_prompt = f"""Проанализируй следующие сообщения пользователя и извлеки информацию о его личности.
+            # Build analysis prompt - NO EXAMPLES to avoid AI copying them
+            analysis_prompt = f"""Прочитай сообщения пользователя и извлеки информацию:
 
-Сообщения:
 {recent_messages[:1000]}
 
-ВАЖНО: Анализируй РЕАЛЬНЫЕ сообщения выше и извлекай РЕАЛЬНУЮ информацию.
-Верни ТОЛЬКО валидный JSON. НЕ копируй примеры - анализируй реальные сообщения.
+Верни ТОЛЬКО JSON. Анализируй ТОЛЬКО то, что написано выше.
 
-Формат ответа (ЗАМЕНИ значения на реальные из сообщений):
 {{
   "interests": [],
   "technical_weaknesses": [],
   "personal_weaknesses": [],
-  "speaking_tone": "casual",
-  "humor_type": "unknown",
+  "speaking_tone": "",
+  "humor_type": "",
   "common_mistakes": [],
   "embarrassing_moments": []
 }}
 
-Правила:
-- interests: список тем, о которых человек говорит (например: ["программирование", "игры"])
-- technical_weaknesses: технические проблемы, если упоминал (например: ["проблемы с git"])
-- personal_weaknesses: личные слабости, которые видно (например: ["забывчивость"])
-- speaking_tone: выбери ОДНО из: casual, formal, sarcastic, aggressive, friendly
-- humor_type: выбери ОДНО из: sarcastic, witty, silly, dark, wholesome, unknown
-- common_mistakes: ошибки в речи или поведении (например: ["путает 'для' и 'даля'"])
-- embarrassing_moments: неловкие ситуации, которые упоминал (например: ["забыл пароль на работе"])
+Что заполнить:
+- interests: темы о которых говорит
+- technical_weaknesses: технические проблемы которые упомянул  
+- personal_weaknesses: личные проблемы которые видно
+- speaking_tone: выбери ОДНО слово: casual/formal/sarcastic/aggressive/friendly
+- humor_type: выбери ОДНО слово: sarcastic/witty/silly/dark/wholesome/unknown
+- common_mistakes: ошибки в тексте
+- embarrassing_moments: неловкие ситуации которые рассказал
 
-Если данных нет - оставь пустой массив []. НЕ придумывай данные."""
+Если нет данных - пустой массив []. НЕ придумывай."""
 
-            system_prompt = "Ты эксперт-психолог. Анализируй ТОЛЬКО реальные сообщения. Отвечай ТОЛЬКО валидным JSON с реальными данными, не копируй примеры."
+            system_prompt = "Ты аналитик текста. Отвечай ТОЛЬКО JSON. Анализируй ТОЛЬКО реальный текст выше. Не придумывай."
             
             # Get AI analysis
             response = await ai_analyzer.free_request(
