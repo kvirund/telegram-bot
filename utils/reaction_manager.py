@@ -105,10 +105,7 @@ class ReactionManager:
             reason = "random choice"
         
         # Log without emoji to avoid Windows encoding issues
-        try:
-            logger.info(f"Selected reaction {reaction} ({reason}) for message: {message_text[:50]}...")
-        except UnicodeEncodeError:
-            logger.info(f"Selected reaction ({reason}) for message: {message_text[:50]}...")
+        logger.info(f"Selected reaction type: {reason} for message: {message_text[:50]}...")
         return reaction
 
 
