@@ -103,6 +103,15 @@ class ReactionSystemConfig:
 
 
 @dataclass
+class SystemPromptsConfig:
+    """System prompts configuration."""
+    joke_generation: str = "You are a witty Russian joke generator."
+    conversation: str = "You are a helpful, witty AI assistant."
+    autonomous_comment: str = "You are an observational bot."
+    ai_decision: str = "You are a conversation analyst. Respond with YES or NO."
+
+
+@dataclass
 class YamlConfig:
     """YAML configuration wrapper."""
     bot: BotSettings = field(default_factory=lambda: BotSettings(telegram_token="", bot_username=""))
@@ -111,6 +120,7 @@ class YamlConfig:
     user_profiling: UserProfilingConfig = field(default_factory=UserProfilingConfig)
     conversation_monitoring: ConversationMonitoringConfig = field(default_factory=ConversationMonitoringConfig)
     reaction_system: ReactionSystemConfig = field(default_factory=ReactionSystemConfig)
+    system_prompts: SystemPromptsConfig = field(default_factory=SystemPromptsConfig)
     excluded_chats: List[int] = field(default_factory=list)
 
 
@@ -255,6 +265,15 @@ def load_yaml_config() -> YamlConfig:
             reaction_types=rs_data.get('reaction_types', ["👍", "😂", "🔥", "😱", "🤔", "👀", "💯", "🎯"])
         )
         
+        # Parse system_prompts section
+        sp_data = yaml_data.get('system_prompts', {})
+        system_prompts = SystemPromptsConfig(
+            joke_generation=sp_data.get('joke_generation', "You are a witty Russian joke generator."),
+            conversation=sp_data.get('conversation', "You are a helpful, witty AI assistant."),
+            autonomous_comment=sp_data.get('autonomous_comment', "You are an observational bot."),
+            ai_decision=sp_data.get('ai_decision', "You are a conversation analyst. Respond with YES or NO.")
+        )
+        
         # Parse excluded_chats
         excluded_chats = yaml_data.get('excluded_chats', [])
         
@@ -265,6 +284,7 @@ def load_yaml_config() -> YamlConfig:
             user_profiling=user_profiling,
             conversation_monitoring=conversation_monitoring,
             reaction_system=reaction_system,
+            system_prompts=system_prompts,
             excluded_chats=excluded_chats
         )
     except Exception as e:
