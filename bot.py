@@ -160,6 +160,12 @@ def main():
         # Register handler for /chats command
         app.add_handler(MessageHandler(filters.COMMAND & filters.Regex(r'^/chats'), handle_message))
         
+        # Register handler for /setprompt command
+        app.add_handler(MessageHandler(filters.COMMAND & filters.Regex(r'^/setprompt'), handle_message))
+        
+        # Register handler for /saveprofiles command
+        app.add_handler(MessageHandler(filters.COMMAND & filters.Regex(r'^/saveprofiles'), handle_message))
+        
         # Register error handler
         app.add_error_handler(error_handler)
         
