@@ -1,6 +1,7 @@
 """Message handlers for the Telegram bot."""
 import logging
 import asyncio
+import json
 from telegram import Update
 from telegram.ext import ContextTypes
 from config import get_config
@@ -173,11 +174,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # Check if it's a /saveprofiles command
     if message.text.startswith('/saveprofiles'):
         await handle_saveprofiles_command(update, context)
-        return
-    
-    # Check if it's a /regenerate command
-    if message.text.startswith('/regenerate'):
-        await handle_regenerate_command(update, context)
         return
     
     # In private chats, respond conversationally to all messages
@@ -705,8 +701,7 @@ def _build_russian_help(user_id: int, is_admin: bool) -> str:
         help_text += "/profile &lt;пользователь&gt; - Показать профиль\n"
         help_text += "/chats - Список всех активных чатов\n"
         help_text += "/setprompt [тип] [промпт] - Изменить системные промпты\n"
-        help_text += "/saveprofiles - Сохранить все профили на диск\n"
-        help_text += "/regenerate - Перегенерировать все профили из истории\n\n"
+        help_text += "/saveprofiles - Сохранить все профили на диск\n\n"
         
         help_text += "<b>Примеры использования:</b>\n"
         help_text += "• /profile @username или /profile 123456789\n"
@@ -761,8 +756,7 @@ def _build_english_help(user_id: int, is_admin: bool) -> str:
         help_text += "/profile &lt;user&gt; - Show user profile\n"
         help_text += "/chats - List all active chats\n"
         help_text += "/setprompt [type] [prompt] - Modify system prompts\n"
-        help_text += "/saveprofiles - Force save all profiles\n"
-        help_text += "/regenerate - Regenerate all profiles from history\n\n"
+        help_text += "/saveprofiles - Force save all profiles\n\n"
         
         help_text += "<b>Usage Examples:</b>\n"
         help_text += "• /profile @username or /profile 123456789\n"
@@ -961,11 +955,11 @@ async def handle_profile_command(update: Update, context: ContextTypes.DEFAULT_T
         
         try:
             profile_summary = await _generate_ai_profile_summary(profile, language)
-            
+
             await message.reply_text(
                 profile_summary,
                 reply_to_message_id=message.message_id,
-                parse_mode='Markdown'
+                parse_mode='HTML'
             )
         except Exception as e:
             logger.error(f"Error generating AI profile summary: {e}")
@@ -1289,7 +1283,7 @@ async def handle_regenerate_command(update: Update, context: ContextTypes.DEFAUL
         user_data = {}  # user_id -> messages list
         
         for chat_id in all_chats:
-            messages = message_history.get_recent_messages(chat_id, count=100)
+            messages = message_history.get_recent_messages(chat_id, count=None)  # Get ALL messages
             if not messages:
                 continue
             
@@ -1819,16 +1813,15 @@ async def check_and_add_reaction(update: Update, context: ContextTypes.DEFAULT_T
 
 async def _generate_ai_profile_summary(profile, language: str) -> str:
     """Generate comprehensive AI profile summary in target language.
-    
+
     Args:
         profile: UserProfile object
         language: Target language ('ru' or 'en')
-        
+
     Returns:
         str: Formatted profile summary
     """
     # Prepare profile data as JSON for AI
-    import json
     profile_data = {
         "basic_info": {
             "user_id": profile.user_id,
@@ -1869,7 +1862,11 @@ async def _generate_ai_profile_summary(profile, language: str) -> str:
 - Забавные или неловкие моменты
 
 Пиши естественно и занимательно, как будто описываешь знакомого человека. Используй эмодзи.
-Формат Markdown. Начни с "👤 **{profile.first_name}**"."""
+
+КРИТИЧНО ВАЖНО: Используй ТОЛЬКО эти HTML теги: <b>bold</b>, <i>italic</i>, <u>underline</u>, <s>strikethrough</s>, <code>code</code>, <pre>preformatted</pre>, <a href="...">link</a>.
+ЗАПРЕЩЕНО использовать: <h1>, <h2>, <h3>, <p>, <div>, <span>, <br>, <strong>, <em> или любые другие HTML теги.
+
+Начни с "<b>👤 {profile.first_name}</b>" и используй <b> для выделения важных частей текста вместо заголовков."""
     else:
         prompt = f"""Create a detailed, readable profile description based on this data:
 
@@ -1880,17 +1877,32 @@ Create a FULL psychological portrait of the user in narrative form. Include:
 - Interests and hobbies
 - Communication style and humor
 - Technical and personal weaknesses
-- Characteristic mistakes and behavior patterns  
+- Characteristic mistakes and behavior patterns
 - Funny or awkward moments
 
 Write naturally and engagingly, as if describing an acquaintance. Use emoji.
-Markdown format. Start with "👤 **{profile.first_name}**"."""
+
+CRITICALLY IMPORTANT: Use ONLY these HTML tags: <b>bold</b>, <i>italic</i>, <u>underline</u>, <s>strikethrough</s>, <code>code</code>, <pre>preformatted</pre>, <a href="...">link</a>.
+FORBIDDEN to use: <h1>, <h2>, <h3>, <p>, <div>, <span>, <br>, <strong>, <em> or any other HTML tags.
+
+Start with "<b>👤 {profile.first_name}</b>" and use <b> to highlight important parts of text instead of headers."""
     
     try:
         summary = await ai_provider.free_request(
             user_message=prompt,
             system_message="You are a skilled profiler. Create comprehensive, engaging profiles."
         )
+
+        # Sanitize the response to remove unsupported HTML tags
+        import re
+        # Remove unsupported HTML tags but keep supported ones
+        # Supported: <b>, <i>, <u>, <s>, <code>, <pre>, <a>
+        # Remove: <h1>, <h2>, <h3>, <p>, <div>, <span>, <br>, <strong>, <em>, etc.
+        unsupported_tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th']
+        for tag in unsupported_tags:
+            # Remove opening and closing tags
+            summary = re.sub(rf'</?{tag}[^>]*>', '', summary, flags=re.IGNORECASE)
+
         return summary
     except Exception as e:
         logger.error(f"Error generating AI summary: {e}")

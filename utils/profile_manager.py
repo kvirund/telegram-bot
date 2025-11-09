@@ -306,7 +306,6 @@ class ProfileManager:
             )
             
             # Parse JSON response
-            import json
             # Clean response - remove markdown code blocks if present
             response_clean = response.strip()
             if response_clean.startswith('```'):

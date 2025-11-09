@@ -504,10 +504,10 @@ IMPORTANT: Respond ONLY with valid JSON, no other text."""
     
     def _parse_comment_response(self, response: str) -> Optional[Dict]:
         """Parse AI response for comment.
-        
+
         Args:
             response: AI response text
-            
+
         Returns:
             Dict with comment data or None
         """
@@ -515,17 +515,47 @@ IMPORTANT: Respond ONLY with valid JSON, no other text."""
             # Try to find JSON in response
             start = response.find('{')
             end = response.rfind('}') + 1
-            
+
             if start >= 0 and end > start:
                 json_text = response[start:end]
                 data = json.loads(json_text)
-                
+
                 if data.get('should_comment') and data.get('comment'):
+                    # Validate and clean reply_to_message_id
+                    reply_id = data.get('reply_to_message_id')
+                    if reply_id is not None:
+                        # Handle cases where AI returns formatted strings like "[ID:12345]"
+                        if isinstance(reply_id, str):
+                            # Extract number from [ID:X] format
+                            if reply_id.startswith('[ID:') and reply_id.endswith(']'):
+                                try:
+                                    reply_id = int(reply_id[4:-1])
+                                except ValueError:
+                                    logger.warning(f"Invalid reply_to_message_id format: {reply_id}, setting to None")
+                                    reply_id = None
+                            else:
+                                # Try to convert string to int
+                                try:
+                                    reply_id = int(reply_id)
+                                except ValueError:
+                                    logger.warning(f"reply_to_message_id is not a valid number: {reply_id}, setting to None")
+                                    reply_id = None
+                        elif not isinstance(reply_id, int):
+                            logger.warning(f"reply_to_message_id must be int or None, got {type(reply_id)}: {reply_id}, setting to None")
+                            reply_id = None
+
+                        # Ensure it's a positive integer (valid message ID)
+                        if reply_id is not None and (not isinstance(reply_id, int) or reply_id <= 0):
+                            logger.warning(f"Invalid reply_to_message_id: {reply_id}, setting to None")
+                            reply_id = None
+
+                        data['reply_to_message_id'] = reply_id
+
                     return data
         except Exception as e:
             logger.error(f"Error parsing comment response: {e}")
             logger.debug(f"Response was: {response}")
-        
+
         return None
     
     def get_chat_stats(self, chat_id: int) -> Dict:

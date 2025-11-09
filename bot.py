@@ -3,12 +3,14 @@ import sys
 import signal
 import logging
 import asyncio
+import argparse
 from telegram import Update
 from telegram.ext import Application, MessageHandler, MessageReactionHandler, filters
 from config import get_config
 from handlers.message_handler import handle_message, handle_message_reaction, auto_save_profiles, auto_save_context
 from utils.profile_manager import profile_manager
 from utils.context_extractor import message_history
+from ai_providers import create_provider
 
 
 # Configure logging
@@ -35,6 +37,124 @@ logger = logging.getLogger(__name__)
 # Global application instance for graceful shutdown
 app = None
 auto_save_task = None
+
+
+async def regenerate_all_profiles():
+    """Regenerate all user profiles from context history.
+    
+    This standalone function can be called from command line to regenerate
+    all profiles using the new AI enrichment prompt.
+    """
+    logger.info("=" * 60)
+    logger.info("PROFILE REGENERATION STARTING")
+    logger.info("=" * 60)
+    
+    try:
+        # Load configuration
+        config = get_config()
+        logger.info(f"Configuration loaded: {config.ai_provider} / {config.model_name}")
+        
+        # Create AI provider
+        ai_provider = create_provider(
+            provider_type=config.ai_provider,
+            api_key=config.api_key,
+            model=config.model_name,
+            base_url=config.base_url
+        )
+        logger.info("AI provider initialized")
+        
+        # Get all chats from message history
+        all_chats = message_history.get_all_chat_ids()
+        logger.info(f"Found {len(all_chats)} chats in history")
+        
+        # Collect user messages from all chats
+        user_data = {}  # user_id -> messages list
+        user_info = {}  # user_id -> user info dict
+
+        for chat_id in all_chats:
+            messages = message_history.get_recent_messages(chat_id)
+            if not messages:
+                continue
+
+            # Limit to most recent 100 messages
+            messages = messages[-100:]
+
+            for msg_data in messages:
+                msg_user_id = msg_data.get('user_id', 0)
+                text = msg_data.get('text', '')
+
+                if msg_user_id == 0 or not text or text.startswith('/'):
+                    continue
+
+                # Store user info from the first message we see for each user
+                if msg_user_id not in user_info:
+                    user_info[msg_user_id] = {
+                        'username': msg_data.get('username', ''),
+                        'first_name': msg_data.get('first_name', ''),
+                        'last_name': msg_data.get('last_name', '')
+                    }
+
+                if msg_user_id not in user_data:
+                    user_data[msg_user_id] = []
+                user_data[msg_user_id].append(text)
+        
+        if not user_data:
+            logger.warning("No user messages found in context history")
+            return
+        
+        logger.info(f"Found {len(user_data)} users to process")
+        
+        # Process each user
+        processed = 0
+        skipped = 0
+        failed = 0
+        
+        for user_id, messages in user_data.items():
+            if len(messages) < 5:
+                logger.info(f"Skipping user {user_id} (only {len(messages)} messages)")
+                skipped += 1
+                continue
+
+            profile = profile_manager.load_profile(user_id)
+
+            # Update profile with user info from context history
+            if user_id in user_info:
+                info = user_info[user_id]
+                profile.username = info['username'] or profile.username
+                profile.first_name = info['first_name'] or profile.first_name
+                profile.last_name = info['last_name'] or profile.last_name
+
+            messages_text = "\n".join(messages[:30])
+
+            # Sanitize name for logging to avoid Unicode encoding issues
+            safe_name = (profile.first_name or 'Unknown').encode('ascii', 'ignore').decode('ascii') or 'Unknown'
+            logger.info(f"Processing user {user_id} ({safe_name}) - {len(messages)} messages")
+            
+            try:
+                await profile_manager.enrich_profile_with_ai(
+                    user_id=user_id,
+                    recent_messages=messages_text,
+                    ai_analyzer=ai_provider
+                )
+                profile_manager.save_profile(user_id)
+                processed += 1
+                logger.info(f"[OK] User {user_id} enriched successfully")
+
+            except Exception as e:
+                logger.error(f"[FAIL] Failed to regenerate profile for user {user_id}: {e}")
+                failed += 1
+        
+        logger.info("=" * 60)
+        logger.info("PROFILE REGENERATION COMPLETE")
+        logger.info(f"Processed: {processed}")
+        logger.info(f"Skipped (<5 messages): {skipped}")
+        logger.info(f"Failed: {failed}")
+        logger.info(f"Total: {len(user_data)}")
+        logger.info("=" * 60)
+        
+    except Exception as e:
+        logger.error(f"Error during profile regeneration: {e}", exc_info=True)
+        raise
 
 
 def shutdown_handler(signum, frame):
@@ -88,8 +208,24 @@ def main():
     """Main entry point for the bot."""
     global app, auto_save_task
     
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Telegram Joke Bot')
+    parser.add_argument(
+        '--regenerate-profiles',
+        action='store_true',
+        help='Regenerate all user profiles from context history using AI enrichment'
+    )
+    args = parser.parse_args()
+    
     # Set up logging
     setup_logging()
+    
+    # If regenerate profiles flag is set, run that instead of the bot
+    if args.regenerate_profiles:
+        logger.info("REGENERATE PROFILES MODE")
+        asyncio.run(regenerate_all_profiles())
+        return
+    
     logger.info("Starting Telegram Joke Bot...")
     
     try:
