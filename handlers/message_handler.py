@@ -705,7 +705,8 @@ def _build_russian_help(user_id: int, is_admin: bool) -> str:
         help_text += "/profile &lt;пользователь&gt; - Показать профиль\n"
         help_text += "/chats - Список всех активных чатов\n"
         help_text += "/setprompt [тип] [промпт] - Изменить системные промпты\n"
-        help_text += "/saveprofiles - Сохранить все профили на диск\n\n"
+        help_text += "/saveprofiles - Сохранить все профили на диск\n"
+        help_text += "/regenerate - Перегенерировать все профили из истории\n\n"
         
         help_text += "<b>Примеры использования:</b>\n"
         help_text += "• /profile @username или /profile 123456789\n"
@@ -760,7 +761,8 @@ def _build_english_help(user_id: int, is_admin: bool) -> str:
         help_text += "/profile &lt;user&gt; - Show user profile\n"
         help_text += "/chats - List all active chats\n"
         help_text += "/setprompt [type] [prompt] - Modify system prompts\n"
-        help_text += "/saveprofiles - Force save all profiles\n\n"
+        help_text += "/saveprofiles - Force save all profiles\n"
+        help_text += "/regenerate - Regenerate all profiles from history\n\n"
         
         help_text += "<b>Usage Examples:</b>\n"
         help_text += "• /profile @username or /profile 123456789\n"
