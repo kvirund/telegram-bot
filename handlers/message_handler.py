@@ -1381,11 +1381,12 @@ async def check_and_add_reaction(update: Update, context: ContextTypes.DEFAULT_T
             logger.warning("Reaction API not available in your python-telegram-bot version. Please upgrade to >= 20.0 for reaction support.")
             return
         
-        # Add reaction to message
+        # Add reaction to message using ReactionTypeEmoji
+        from telegram import ReactionTypeEmoji
         await context.bot.set_message_reaction(
             chat_id=chat_id,
             message_id=message.message_id,
-            reaction=reaction
+            reaction=[ReactionTypeEmoji(emoji=reaction)]
         )
         
         # Mark that we reacted
