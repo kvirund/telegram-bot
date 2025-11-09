@@ -231,29 +231,59 @@ class AutonomousCommenter:
             if msg.from_user and msg.from_user.id != bot_user_id
         ]
         
+        # If no messages in memory, try to load from context_history
         if not recent_messages:
-            logger.warning(f"No recent messages to comment on in chat {chat_id}")
-            return None
+            from utils.context_extractor import message_history
+            recent_msg_dicts = message_history.get_recent_messages(chat_id)
+            
+            if recent_msg_dicts:
+                # Convert message dicts back to Message-like objects for processing
+                # We'll extract the text and user info we need
+                logger.info(f"Loaded {len(recent_msg_dicts)} messages from context_history for chat {chat_id}")
+            else:
+                logger.warning(f"No recent messages to comment on in chat {chat_id}")
+                return None
+        else:
+            recent_msg_dicts = None
         
         # Gather user profiles for context
         user_ids = []
-        for msg in recent_messages:
-            if msg.from_user and msg.from_user.id not in user_ids:
-                user_ids.append(msg.from_user.id)
+        conversation_lines = []
+        
+        if recent_msg_dicts:
+            # Use messages from context_history
+            for msg_dict in recent_msg_dicts[-10:]:
+                user_id = msg_dict.get('user_id', 0)
+                if user_id and user_id not in user_ids and user_id != bot_user_id:
+                    user_ids.append(user_id)
+                
+                text = msg_dict.get('text', '').strip()
+                if text:
+                    username = msg_dict.get('first_name') or msg_dict.get('username') or "User"
+                    msg_id = msg_dict.get('message_id', 0)
+                    conversation_lines.append(f"[ID:{msg_id}] {username}: {text}")
+        else:
+            # Use messages from memory
+            for msg in recent_messages:
+                if msg.from_user and msg.from_user.id not in user_ids:
+                    user_ids.append(msg.from_user.id)
+            
+            # Format conversation context
+            for msg in recent_messages[-10:]:  # Last 10 messages
+                if msg.from_user and msg.text:
+                    username = msg.from_user.first_name or msg.from_user.username or "User"
+                    conversation_lines.append(f"[ID:{msg.message_id}] {username}: {msg.text}")
+        
+        conversation_context = "\n".join(conversation_lines)
+        
+        if not conversation_context:
+            logger.warning(f"No conversation context available for chat {chat_id}")
+            return None
         
         profiles = {}
         for user_id in user_ids:
             profile = self.profile_manager.load_profile(user_id)
             profiles[user_id] = profile
-        
-        # Format conversation context
-        conversation_lines = []
-        for msg in recent_messages[-10:]:  # Last 10 messages
-            if msg.from_user and msg.text:
-                username = msg.from_user.first_name or msg.from_user.username or "User"
-                conversation_lines.append(f"[ID:{msg.message_id}] {username}: {msg.text}")
-        
-        conversation_context = "\n".join(conversation_lines)
         
         # Format profiles for AI
         profile_summaries = {}
