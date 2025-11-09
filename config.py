@@ -111,6 +111,7 @@ class SystemPromptsConfig:
     conversation: str = "You are a helpful, witty AI assistant."
     autonomous_comment: str = "You are an observational bot."
     ai_decision: str = "You are a conversation analyst. Respond with YES or NO."
+    mention_response: str = "You are a straightforward, sarcastic bot. Respond directly to mentions."
 
 
 @dataclass
@@ -275,7 +276,8 @@ def load_yaml_config() -> YamlConfig:
             joke_generation=sp_data.get('joke_generation', "You are a witty Russian joke generator."),
             conversation=sp_data.get('conversation', "You are a helpful, witty AI assistant."),
             autonomous_comment=sp_data.get('autonomous_comment', "You are an observational bot."),
-            ai_decision=sp_data.get('ai_decision', "You are a conversation analyst. Respond with YES or NO.")
+            ai_decision=sp_data.get('ai_decision', "You are a conversation analyst. Respond with YES or NO."),
+            mention_response=sp_data.get('mention_response', "You are a straightforward, sarcastic bot. Respond directly to mentions.")
         )
         
         # Parse excluded_chats

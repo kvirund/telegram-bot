@@ -1186,7 +1186,7 @@ async def handle_setprompt_command(update: Update, context: ContextTypes.DEFAULT
         new_prompt = parts[2]
         
         # Validate prompt type
-        valid_types = ['joke_generation', 'conversation', 'autonomous_comment', 'ai_decision']
+        valid_types = ['joke_generation', 'conversation', 'autonomous_comment', 'ai_decision', 'mention_response']
         if prompt_type not in valid_types:
             await message.reply_text(
                 f"[X] Invalid prompt type: {prompt_type}\n"
@@ -1475,7 +1475,8 @@ async def handle_private_conversation(update: Update, context: ContextTypes.DEFA
 async def handle_mention(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle bot mentions in messages.
     
-    When the bot is mentioned, it generates a contextual joke based on recent conversation.
+    When the bot is mentioned, it responds using the mention_response system prompt
+    with conversation context.
     
     Args:
         update: Telegram update object
@@ -1486,9 +1487,10 @@ async def handle_mention(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     
     message = update.message
     chat_id = message.chat_id
+    user_message = message.text or ""
     
     try:
-        logger.info(f"Bot mentioned in chat {chat_id}, generating contextual joke")
+        logger.info(f"Bot mentioned in chat {chat_id}, generating response")
         
         # Get conversation context
         conversation_context = message_history.get_context(
@@ -1496,21 +1498,32 @@ async def handle_mention(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             count=config.context_messages_count
         )
         
-        if conversation_context:
-            # Generate contextual joke
-            joke = await ai_provider.generate_joke(context=conversation_context, is_contextual=True)
-        else:
-            # No context available, generate random joke
-            logger.warning(f"No context available for mention in chat {chat_id}")
-            joke = await ai_provider.generate_joke(context=None, is_contextual=False)
+        # Get the mention_response system prompt
+        system_prompt = config.yaml_config.system_prompts.mention_response
         
-        # Send the joke
-        await send_joke_response(message, joke)
+        # Build user message with context
+        if conversation_context:
+            context_aware_message = f"Контекст разговора:\n{conversation_context}\n\nПоследнее сообщение: {user_message}\n\nОтветь на сообщение в контексте разговора:"
+        else:
+            context_aware_message = f"Сообщение: {user_message}\n\nОтветь на это сообщение:"
+        
+        # Generate response using the mention_response prompt
+        response = await ai_provider.free_request(
+            user_message=context_aware_message,
+            system_message=system_prompt
+        )
+        
+        # Send the response
+        await message.reply_text(
+            response,
+            reply_to_message_id=message.message_id
+        )
+        logger.info(f"Successfully sent mention response to chat {chat_id}")
         
     except Exception as e:
         logger.error(f"Error handling mention: {e}")
         await message.reply_text(
-            "Извините, произошла ошибка. Попробуйте позже.",
+            "Иди нахуй, у меня ошибка.",
             reply_to_message_id=message.message_id
         )
 
