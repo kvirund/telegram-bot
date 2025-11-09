@@ -4,9 +4,9 @@ import signal
 import logging
 import asyncio
 from telegram import Update
-from telegram.ext import Application, MessageHandler, filters
+from telegram.ext import Application, MessageHandler, MessageReactionHandler, filters
 from config import get_config
-from handlers.message_handler import handle_message, auto_save_profiles, auto_save_context
+from handlers.message_handler import handle_message, handle_message_reaction, auto_save_profiles, auto_save_context
 from utils.profile_manager import profile_manager
 from utils.context_extractor import message_history
 
@@ -165,6 +165,9 @@ def main():
         
         # Register handler for /saveprofiles command
         app.add_handler(MessageHandler(filters.COMMAND & filters.Regex(r'^/saveprofiles'), handle_message))
+        
+        # Register handler for message reactions
+        app.add_handler(MessageReactionHandler(handle_message_reaction))
         
         # Register error handler
         app.add_error_handler(error_handler)

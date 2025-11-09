@@ -38,6 +38,15 @@ class UserPatterns:
 
 
 @dataclass
+class ReactionPatterns:
+    """User's reaction usage patterns."""
+    favorite_reactions: Dict[str, int] = field(default_factory=dict)  # emoji: count
+    reaction_targets: List[str] = field(default_factory=list)  # Types of content they react to
+    emotional_responses: Dict[str, int] = field(default_factory=dict)  # emotion_type: count
+    total_reactions: int = 0
+
+
+@dataclass
 class RoastHistory:
     """Track roasting effectiveness."""
     successful_roasts: int = 0
@@ -77,6 +86,9 @@ class UserProfile:
     # Roasting effectiveness
     roast_history: RoastHistory = field(default_factory=RoastHistory)
     
+    # Reaction patterns
+    reaction_patterns: ReactionPatterns = field(default_factory=ReactionPatterns)
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert profile to dictionary."""
         return asdict(self)
@@ -93,6 +105,8 @@ class UserProfile:
             data['patterns'] = UserPatterns(**data['patterns'])
         if 'roast_history' in data and isinstance(data['roast_history'], dict):
             data['roast_history'] = RoastHistory(**data['roast_history'])
+        if 'reaction_patterns' in data and isinstance(data['reaction_patterns'], dict):
+            data['reaction_patterns'] = ReactionPatterns(**data['reaction_patterns'])
         
         return cls(**data)
 
@@ -391,6 +405,65 @@ class ProfileManager:
         for user_id in user_ids:
             context[user_id] = self.get_profile_summary(user_id)
         return context
+    
+    def track_reaction(
+        self,
+        user_id: int,
+        emoji: str,
+        target_message_text: str = ""
+    ) -> None:
+        """Track user's reaction to a message.
+        
+        Args:
+            user_id: User who added the reaction
+            emoji: The emoji reaction added
+            target_message_text: Optional text of the message reacted to
+        """
+        profile = self.load_profile(user_id)
+        
+        # Track favorite reactions
+        if emoji in profile.reaction_patterns.favorite_reactions:
+            profile.reaction_patterns.favorite_reactions[emoji] += 1
+        else:
+            profile.reaction_patterns.favorite_reactions[emoji] = 1
+        
+        profile.reaction_patterns.total_reactions += 1
+        
+        # Analyze target message content (simple keyword detection)
+        if target_message_text:
+            target_lower = target_message_text.lower()
+            
+            # Detect what type of content they react to
+            if any(word in target_lower for word in ['joke', 'funny', '😂', '😄', 'haha', 'lol']):
+                if 'humor' not in profile.reaction_patterns.reaction_targets:
+                    profile.reaction_patterns.reaction_targets.append('humor')
+            elif any(word in target_lower for word in ['news', 'update', 'announcement']):
+                if 'news' not in profile.reaction_patterns.reaction_targets:
+                    profile.reaction_patterns.reaction_targets.append('news')
+            elif any(word in target_lower for word in ['?', 'question', 'how', 'what', 'why']):
+                if 'questions' not in profile.reaction_patterns.reaction_targets:
+                    profile.reaction_patterns.reaction_targets.append('questions')
+        
+        # Categorize emotional response
+        positive_emojis = ['👍', '❤️', '🔥', '😊', '😂', '🎉', '✅', '💯']
+        negative_emojis = ['👎', '😠', '😢', '💔', '❌']
+        thinking_emojis = ['🤔', '💭', '🧐']
+        
+        if emoji in positive_emojis:
+            emotion = 'positive'
+        elif emoji in negative_emojis:
+            emotion = 'negative'
+        elif emoji in thinking_emojis:
+            emotion = 'thoughtful'
+        else:
+            emotion = 'neutral'
+        
+        if emotion in profile.reaction_patterns.emotional_responses:
+            profile.reaction_patterns.emotional_responses[emotion] += 1
+        else:
+            profile.reaction_patterns.emotional_responses[emotion] = 1
+        
+        logger.debug(f"Tracked reaction {emoji} for user {user_id} (total: {profile.reaction_patterns.total_reactions})")
     
     def record_roast(
         self,

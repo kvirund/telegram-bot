@@ -1761,3 +1761,77 @@ async def send_joke_response(message, joke: str) -> None:
     except Exception as e:
         logger.error(f"Failed to send joke: {e}")
         raise
+
+
+async def handle_message_reaction(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle reaction updates (when users add reactions to messages).
+    
+    Args:
+        update: Telegram update object
+        context: Telegram context object
+    """
+    if not update.message_reaction:
+        return
+    
+    reaction_update = update.message_reaction
+    user_id = reaction_update.user.id if reaction_update.user else 0
+    chat_id = reaction_update.chat.id
+    message_id = reaction_update.message_id
+    
+    # Skip if no user or if it's the bot itself
+    if not user_id or user_id == context.bot.id:
+        return
+    
+    # Skip if profiling is disabled
+    if not config.yaml_config.user_profiling.enabled:
+        return
+    
+    try:
+        # Get the new reactions (those just added)
+        new_reactions = reaction_update.new_reaction
+        
+        if not new_reactions:
+            return
+        
+        # Get the target message text if available
+        target_message_text = ""
+        try:
+            # Get the full message data to extract text
+            target_msg = await context.bot.forward_message(
+                chat_id=chat_id,
+                from_chat_id=chat_id,
+                message_id=message_id
+            )
+            if target_msg and target_msg.text:
+                target_message_text = target_msg.text
+            # Delete the forwarded message
+            await context.bot.delete_message(chat_id=chat_id, message_id=target_msg.message_id)
+        except Exception:
+            # If we can't get the message, just track without context
+            pass
+        
+        # Track each reaction
+        for reaction in new_reactions:
+            emoji = None
+            
+            # Extract emoji from reaction
+            if hasattr(reaction, 'emoji'):
+                emoji = reaction.emoji
+            elif hasattr(reaction, 'custom_emoji_id'):
+                # For custom emojis, just log the ID
+                emoji = f"custom:{reaction.custom_emoji_id}"
+            
+            if emoji:
+                profile_manager.track_reaction(
+                    user_id=user_id,
+                    emoji=emoji,
+                    target_message_text=target_message_text
+                )
+                logger.info(f"[REACTION] User {user_id} reacted with {emoji} in chat {chat_id}")
+        
+        # Save profile periodically
+        if profile_manager.profiles[user_id].reaction_patterns.total_reactions % 5 == 0:
+            profile_manager.save_profile(user_id)
+            
+    except Exception as e:
+        logger.error(f"Error handling reaction: {e}", exc_info=True)
