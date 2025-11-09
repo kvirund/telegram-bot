@@ -242,22 +242,100 @@ class ProfileManager:
     async def enrich_profile_with_ai(
         self,
         user_id: int,
-        message_text: str,
+        recent_messages: str,
         ai_analyzer
     ) -> None:
-        """Use AI to extract deeper insights from message.
+        """Use AI to extract deeper insights from messages.
         
         Args:
             user_id: User ID
-            message_text: Message content
+            recent_messages: Recent message history for context
             ai_analyzer: AI provider for analysis
         """
         profile = self.load_profile(user_id)
         
-        # This will be called by the autonomous commenting system
-        # For now, it's a placeholder for AI-based profile enrichment
-        # The actual AI analysis will be implemented in the autonomous commenter
-        pass
+        try:
+            # Build analysis prompt
+            analysis_prompt = f"""Проанализируй следующие сообщения пользователя и выведи ТОЛЬКО JSON без дополнительного текста:
+
+Сообщения:
+{recent_messages[:1000]}
+
+Верни JSON в таком формате:
+{{
+  "interests": ["интерес1", "интерес2"],
+  "technical_weaknesses": ["слабость1"],
+  "personal_weaknesses": ["слабость2"],
+  "speaking_tone": "casual/formal/sarcastic",
+  "humor_type": "sarcastic/witty/silly/unknown",
+  "common_mistakes": ["ошибка1"],
+  "embarrassing_moments": ["момент1"]
+}}"""
+
+            system_prompt = "Ты эксперт по анализу личности. Отвечай только валидным JSON без комментариев."
+            
+            # Get AI analysis
+            response = await ai_analyzer.free_request(
+                user_message=analysis_prompt,
+                system_message=system_prompt
+            )
+            
+            # Parse JSON response
+            import json
+            # Clean response - remove markdown code blocks if present
+            response_clean = response.strip()
+            if response_clean.startswith('```'):
+                response_clean = response_clean.split('```')[1]
+                if response_clean.startswith('json'):
+                    response_clean = response_clean[4:]
+            response_clean = response_clean.strip()
+            
+            analysis = json.loads(response_clean)
+            
+            # Update profile with AI insights
+            if 'interests' in analysis:
+                for interest in analysis['interests']:
+                    if interest and interest not in profile.interests:
+                        profile.interests.append(interest)
+                # Keep only last 10
+                profile.interests = profile.interests[-10:]
+            
+            if 'technical_weaknesses' in analysis:
+                for weakness in analysis['technical_weaknesses']:
+                    if weakness and weakness not in profile.weaknesses.technical:
+                        profile.weaknesses.technical.append(weakness)
+                profile.weaknesses.technical = profile.weaknesses.technical[-5:]
+            
+            if 'personal_weaknesses' in analysis:
+                for weakness in analysis['personal_weaknesses']:
+                    if weakness and weakness not in profile.weaknesses.personal:
+                        profile.weaknesses.personal.append(weakness)
+                profile.weaknesses.personal = profile.weaknesses.personal[-5:]
+            
+            if 'speaking_tone' in analysis:
+                profile.speaking_style.tone = analysis['speaking_tone']
+            
+            if 'humor_type' in analysis:
+                profile.humor_type = analysis['humor_type']
+            
+            if 'common_mistakes' in analysis:
+                for mistake in analysis['common_mistakes']:
+                    if mistake and mistake not in profile.patterns.common_mistakes:
+                        profile.patterns.common_mistakes.append(mistake)
+                profile.patterns.common_mistakes = profile.patterns.common_mistakes[-5:]
+            
+            if 'embarrassing_moments' in analysis:
+                for moment in analysis['embarrassing_moments']:
+                    if moment and moment not in profile.embarrassing_moments:
+                        profile.embarrassing_moments.append(moment)
+                profile.embarrassing_moments = profile.embarrassing_moments[-5:]
+            
+            logger.info(f"AI-enriched profile for user {user_id}")
+            
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse AI profile analysis for user {user_id}: {e}")
+        except Exception as e:
+            logger.error(f"Error enriching profile for user {user_id}: {e}")
     
     def get_profile_summary(self, user_id: int) -> str:
         """Get formatted summary of user profile.

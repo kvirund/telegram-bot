@@ -360,6 +360,21 @@ Respond with ONLY "YES" or "NO" (one word)."""
         for user_id in user_ids:
             profile = self.profile_manager.load_profile(user_id)
             profiles[user_id] = profile
+            
+            # Enrich profile with AI if we have enough context  
+            if len(conversation_lines) >= 5 and profile.message_count % 10 == 0:
+                # Enrich every 10 messages
+                try:
+                    user_conversation = "\n".join([
+                        line for line in conversation_lines
+                        if f"ID:{user_id}" not in line or profile.first_name in line
+                    ])
+                    if user_conversation:
+                        await self.profile_manager.enrich_profile_with_ai(
+                            user_id, user_conversation, ai_provider
+                        )
+                except Exception as e:
+                    logger.error(f"Error enriching profile for {user_id}: {e}")
         
         # Format profiles for AI
         profile_summaries = {}
