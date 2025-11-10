@@ -2,7 +2,7 @@
 import logging
 import asyncio
 from typing import Optional
-from telegram import Update
+from telegram import Update, BotCommand
 from telegram.ext import Application, MessageHandler, MessageReactionHandler, filters
 from config import get_config
 from handlers.message_handler import handle_message, handle_message_reaction, auto_save_profiles, auto_save_context
@@ -33,6 +33,7 @@ class BotService:
         async def post_init(application: Application) -> None:
             """Initialize after application starts."""
             await self._start_background_tasks()
+            await self._set_bot_commands()
 
         self.app = Application.builder().token(self.config.telegram_token).post_init(post_init).build()
 
@@ -59,32 +60,36 @@ class BotService:
         self.background_tasks.add(task)
         task.add_done_callback(self.background_tasks.discard)
 
+    async def _set_bot_commands(self) -> None:
+        """Set bot commands for autocompletion in Telegram."""
+        if not self.app:
+            logger.warning("Cannot set bot commands: application not initialized")
+            return
+
+        # Import registry to get commands
+        from handlers.commands import command_registry
+
+        # Get bot commands from registry
+        commands = command_registry.get_bot_commands()
+
+        try:
+            await self.app.bot.set_my_commands(commands)
+            logger.info(f"Successfully set {len(commands)} bot commands for autocompletion")
+        except Exception as e:
+            logger.error(f"Failed to set bot commands: {e}")
+
     def _register_handlers(self) -> None:
         """Register all message and command handlers."""
         if not self.app:
             raise RuntimeError("Application not initialized")
 
-        # Register message handler for text messages
-        self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-        # Register handlers for all commands
-        commands = [
-            '/joke', '/ask', '/reload', '/comment', '/help',
-            '/context', '/profile', '/chats', '/setprompt', '/saveprofiles'
-        ]
-
-        for command in commands:
-            self.app.add_handler(
-                MessageHandler(
-                    filters.COMMAND & filters.Regex(f'^{command}'),
-                    handle_message
-                )
-            )
+        # Register message handler for text messages (this will handle both regular messages and commands)
+        self.app.add_handler(MessageHandler(filters.TEXT, handle_message))
 
         # Register handler for message reactions
         self.app.add_handler(MessageReactionHandler(handle_message_reaction))
 
-        logger.info(f"Registered handlers for {len(commands)} commands")
+        logger.info("Registered message and reaction handlers")
 
     async def _error_handler(self, update: Update, context) -> None:
         """Handle errors that occur during update processing.
@@ -171,6 +176,7 @@ class BotService:
         async def post_init(application: Application) -> None:
             """Initialize after application starts."""
             await self._start_background_tasks()
+            await self._set_bot_commands()
 
         self.app = Application.builder().token(self.config.telegram_token).post_init(post_init).build()
 

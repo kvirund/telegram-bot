@@ -7,12 +7,13 @@ from telegram.ext import ContextTypes
 from config import get_config
 from utils.profile_manager import profile_manager
 from ai_providers import create_provider
+from .base import Command
 
 logger = logging.getLogger(__name__)
 
 
-async def handle_profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /profile command to show user profile.
+class ProfileCommand(Command):
+    """Profile command for viewing user profiles.
 
     Usage:
     - /profile @username
@@ -20,136 +21,164 @@ async def handle_profile_command(update: Update, context: ContextTypes.DEFAULT_T
     - /profile FirstName
 
     Only administrators can use this command.
-
-    Args:
-        update: Telegram update object
-        context: Telegram context object
     """
-    config = get_config()
 
-    if not update.message or not update.message.from_user:
-        return
-
-    message = update.message
-    user_id = message.from_user.id
-    username = message.from_user.username or "Unknown"
-
-    logger.info(f"User {user_id} (@{username}) requested /profile command")
-
-    # Check admin privilege
-    if user_id not in config.admin_user_ids:
-        await message.reply_text(
-            "❌ Only administrators can view user profiles.",
-            reply_to_message_id=message.message_id
+    def __init__(self):
+        super().__init__(
+            name="profile",
+            description="Show user profile (admin only)",
+            admin_only=True
         )
-        return
 
-    try:
-        # Parse command
-        command_text = message.text.strip()
-        parts = command_text.split(maxsplit=1)
+    async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Handle /profile command to show user profile.
 
-        if len(parts) < 2:
+        Usage:
+        - /profile @username
+        - /profile user_id
+        - /profile FirstName
+
+        Only administrators can use this command.
+
+        Args:
+            update: Telegram update object
+            context: Telegram context object
+        """
+        config = get_config()
+
+        if not update.message or not update.message.from_user:
+            return
+
+        message = update.message
+        user_id = message.from_user.id
+        username = message.from_user.username or "Unknown"
+
+        logger.info(f"User {user_id} (@{username}) requested /profile command")
+
+        # Check admin privilege
+        if user_id not in config.admin_user_ids:
             await message.reply_text(
-                "Usage: /profile <user>\n\n"
-                "Examples:\n"
-                "• /profile @username\n"
-                "• /profile 123456789\n"
-                "• /profile John",
+                "❌ Only administrators can view user profiles.",
                 reply_to_message_id=message.message_id
             )
             return
-
-        search_term = parts[1].strip()
-
-        # Try to find user profile
-        profile = None
-        search_method = ""
-
-        # Method 1: Try as user ID
-        if search_term.isdigit():
-            profile_id = int(search_term)
-            profile = profile_manager.load_profile(profile_id)
-            if profile and profile.user_id != 0:
-                search_method = f"ID: {profile_id}"
-
-        # Method 2: Try as username (with or without @)
-        if not profile:
-            username_search = search_term.lstrip('@')
-            # Search all profiles for matching username
-            profiles_dir = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                config.yaml_config.user_profiling.profile_directory,
-                "users"
-            )
-            if os.path.exists(profiles_dir):
-                for filename in os.listdir(profiles_dir):
-                    if filename.endswith('.json'):
-                        try:
-                            file_user_id = int(filename.replace('user_', '').replace('.json', ''))
-                            temp_profile = profile_manager.load_profile(file_user_id)
-                            if (temp_profile and temp_profile.username and
-                                temp_profile.username.lower() == username_search.lower()):
-                                profile = temp_profile
-                                search_method = f"Username: @{username_search}"
-                                break
-                        except:
-                            continue
-
-        # Method 3: Try as first name
-        if not profile:
-            if os.path.exists(profiles_dir):
-                for filename in os.listdir(profiles_dir):
-                    if filename.endswith('.json'):
-                        try:
-                            file_user_id = int(filename.replace('user_', '').replace('.json', ''))
-                            temp_profile = profile_manager.load_profile(file_user_id)
-                            if (temp_profile and temp_profile.first_name and
-                                temp_profile.first_name.lower() == search_term.lower()):
-                                profile = temp_profile
-                                search_method = f"Name: {search_term}"
-                                break
-                        except:
-                            continue
-
-        if not profile or profile.user_id == 0:
-            await message.reply_text(
-                f"❌ No profile found for: {search_term}",
-                reply_to_message_id=message.message_id
-            )
-            return
-
-        # Use AI to generate comprehensive, human-readable profile
-        language = profile.language_preference or 'ru'
 
         try:
-            profile_summary = await _generate_ai_profile_summary(profile, language, config)
+            # Parse command
+            command_text = message.text.strip()
+            parts = command_text.split(maxsplit=1)
 
-            await message.reply_text(
-                profile_summary,
-                reply_to_message_id=message.message_id,
-                parse_mode='HTML'
-            )
+            if len(parts) < 2:
+                await message.reply_text(
+                    "Usage: /profile <user>\n\n"
+                    "Examples:\n"
+                    "• /profile @username\n"
+                    "• /profile 123456789\n"
+                    "• /profile John",
+                    reply_to_message_id=message.message_id
+                )
+                return
+
+            search_term = parts[1].strip()
+
+            # Try to find user profile
+            profile = None
+            search_method = ""
+
+            # Method 1: Try as user ID
+            if search_term.isdigit():
+                profile_id = int(search_term)
+                profile = profile_manager.load_profile(profile_id)
+                if profile and profile.user_id != 0:
+                    search_method = f"ID: {profile_id}"
+
+            # Method 2: Try as username (with or without @)
+            if not profile:
+                username_search = search_term.lstrip('@')
+                # Search all profiles for matching username
+                profiles_dir = os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                    config.yaml_config.user_profiling.profile_directory,
+                    "users"
+                )
+                if os.path.exists(profiles_dir):
+                    for filename in os.listdir(profiles_dir):
+                        if filename.endswith('.json'):
+                            try:
+                                file_user_id = int(filename.replace('user_', '').replace('.json', ''))
+                                temp_profile = profile_manager.load_profile(file_user_id)
+                                if (temp_profile and temp_profile.username and
+                                    temp_profile.username.lower() == username_search.lower()):
+                                    profile = temp_profile
+                                    search_method = f"Username: @{username_search}"
+                                    break
+                            except:
+                                continue
+
+            # Method 3: Try as first name
+            if not profile:
+                if os.path.exists(profiles_dir):
+                    for filename in os.listdir(profiles_dir):
+                        if filename.endswith('.json'):
+                            try:
+                                file_user_id = int(filename.replace('user_', '').replace('.json', ''))
+                                temp_profile = profile_manager.load_profile(file_user_id)
+                                if (temp_profile and temp_profile.first_name and
+                                    temp_profile.first_name.lower() == search_term.lower()):
+                                    profile = temp_profile
+                                    search_method = f"Name: {search_term}"
+                                    break
+                            except:
+                                continue
+
+            if not profile or profile.user_id == 0:
+                await message.reply_text(
+                    f"❌ No profile found for: {search_term}",
+                    reply_to_message_id=message.message_id
+                )
+                return
+
+            # Use AI to generate comprehensive, human-readable profile
+            language = profile.language_preference or 'ru'
+
+            try:
+                profile_summary = await _generate_ai_profile_summary(profile, language, config)
+
+                await message.reply_text(
+                    profile_summary,
+                    reply_to_message_id=message.message_id,
+                    parse_mode='HTML'
+                )
+            except Exception as e:
+                logger.error(f"Error generating AI profile summary: {e}")
+                # Fallback to basic display
+                profile_text = f"👤 **User: {profile.first_name}** (@{profile.username})\n"
+                profile_text += f"🆔 ID: `{profile.user_id}`\n"
+                profile_text += f"📊 Messages: {profile.message_count}\n"
+
+                await message.reply_text(
+                    profile_text,
+                    reply_to_message_id=message.message_id,
+                    parse_mode='Markdown'
+                )
+            logger.info(f"Profile displayed for user {profile.user_id} by admin {user_id}")
+
         except Exception as e:
-            logger.error(f"Error generating AI profile summary: {e}")
-            # Fallback to basic display
-            profile_text = f"👤 **User: {profile.first_name}** (@{profile.username})\n"
-            profile_text += f"🆔 ID: `{profile.user_id}`\n"
-            profile_text += f"📊 Messages: {profile.message_count}\n"
-
+            logger.error(f"Error in /profile command: {e}")
             await message.reply_text(
-                profile_text,
-                reply_to_message_id=message.message_id,
-                parse_mode='Markdown'
+                f"❌ Error: {str(e)}",
+                reply_to_message_id=message.message_id
             )
-        logger.info(f"Profile displayed for user {profile.user_id} by admin {user_id}")
 
-    except Exception as e:
-        logger.error(f"Error in /profile command: {e}")
-        await message.reply_text(
-            f"❌ Error: {str(e)}",
-            reply_to_message_id=message.message_id
-        )
+
+# Create and register the command instance
+profile_command = ProfileCommand()
+
+
+# Legacy function for backward compatibility during transition
+async def handle_profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Legacy function for backward compatibility."""
+    await profile_command.execute(update, context)
 
 
 async def _generate_ai_profile_summary(profile, language: str, config) -> str:

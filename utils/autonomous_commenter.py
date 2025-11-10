@@ -9,6 +9,7 @@ from telegram import Message
 
 from config import BotConfig
 from utils.profile_manager import ProfileManager, UserProfile
+from utils.reaction_analytics import reaction_analytics
 
 
 logger = logging.getLogger(__name__)
@@ -93,55 +94,60 @@ class AutonomousCommenter:
     
     def should_comment(self, chat_id: int, bot_user_id: int) -> bool:
         """Decide if bot should make an autonomous comment.
-        
+
         Args:
             chat_id: Chat ID
             bot_user_id: Bot's user ID (to exclude its own messages)
-            
+
         Returns:
             bool: True if should comment
         """
         ac_config = self.config.yaml_config.autonomous_commenting
-        
+
         # Check if autonomous commenting is enabled
         if not ac_config.enabled:
             return False
-        
+
         # Check if chat is excluded
         if chat_id in self.config.yaml_config.excluded_chats:
             return False
-        
+
         state = self._get_chat_state(chat_id)
-        
+
         # Must have minimum messages
         if state.messages_since_last_comment < ac_config.min_messages_between_comments:
             return False
-        
+
         # Check time throttle
         if state.last_comment_time:
             time_since = datetime.utcnow() - state.last_comment_time
             if time_since.total_seconds() < ac_config.min_time_between_comments_seconds:
                 return False
-        
+
         # Check if reached threshold
         if state.messages_since_last_comment < state.next_comment_threshold:
             return False
-        
+
         # Random probability check
-        if random.random() > ac_config.comment_probability:
+        base_probability = ac_config.comment_probability
+
+        # Adjust probability based on recent reaction feedback
+        adjusted_probability = self._adjust_probability_based_on_reactions(chat_id, base_probability)
+
+        if random.random() > adjusted_probability:
             # Reset threshold and try again later
             state.next_comment_threshold = random.randint(
                 ac_config.min_messages_between_comments,
                 ac_config.max_messages_between_comments
             )
             return False
-        
+
         # Intelligent decision check (if enabled)
         if ac_config.use_intelligent_decision:
             # Analyze conversation momentum
             if not self._is_good_time_to_comment(state, bot_user_id):
                 return False
-        
+
         return True
     
     async def should_comment_ai_check(self, chat_id: int, bot_user_id: int, ai_provider) -> bool:
@@ -558,12 +564,51 @@ IMPORTANT: Respond ONLY with valid JSON, no other text."""
 
         return None
     
-    def get_chat_stats(self, chat_id: int) -> Dict:
-        """Get statistics for a chat.
-        
+    def _adjust_probability_based_on_reactions(self, chat_id: int, base_probability: float) -> float:
+        """Adjust commenting probability based on recent reaction feedback.
+
         Args:
             chat_id: Chat ID
-            
+            base_probability: Base probability from config
+
+        Returns:
+            float: Adjusted probability (0.0-1.0)
+        """
+        try:
+            # Get group mood to understand current sentiment
+            mood_data = reaction_analytics.get_group_mood(chat_id)
+
+            # If group is very positive, slightly increase probability
+            if mood_data['overall_mood'] == "Very Positive":
+                adjusted = min(base_probability * 1.2, 0.95)  # Increase by 20%, max 95%
+                logger.debug(f"Very positive mood detected, increasing comment probability to {adjusted}")
+                return adjusted
+
+            # If group is negative, decrease probability
+            elif mood_data['overall_mood'] == "Negative":
+                adjusted = base_probability * 0.7  # Decrease by 30%
+                logger.debug(f"Negative mood detected, decreasing comment probability to {adjusted}")
+                return adjusted
+
+            # If mixed feelings, slightly decrease probability
+            elif mood_data['overall_mood'] == "Mixed":
+                adjusted = base_probability * 0.9  # Decrease by 10%
+                logger.debug(f"Mixed mood detected, slightly decreasing comment probability to {adjusted}")
+                return adjusted
+
+            # For positive or neutral moods, use base probability
+            return base_probability
+
+        except Exception as e:
+            logger.error(f"Error adjusting probability based on reactions: {e}")
+            return base_probability  # Return base probability if analysis fails
+
+    def get_chat_stats(self, chat_id: int) -> Dict:
+        """Get statistics for a chat.
+
+        Args:
+            chat_id: Chat ID
+
         Returns:
             Dict with stats
         """
@@ -573,7 +618,7 @@ IMPORTANT: Respond ONLY with valid JSON, no other text."""
                 "last_comment": "Never",
                 "next_threshold": 0
             }
-        
+
         state = self.chat_states[chat_id]
         return {
             "messages_since_comment": state.messages_since_last_comment,

@@ -32,13 +32,68 @@ async def handle_message_reaction(update, context):
     """Handle message reaction updates.
 
     This function is called when users add/remove reactions to messages.
-    Currently, we don't do anything special with reactions, but this
-    could be extended to track user reaction patterns.
+    Tracks user reaction patterns for profile analysis.
     """
-    # For now, just log the reaction event
-    if update.message_reaction:
-        logger.debug(f"Message reaction update: {update.message_reaction}")
-    # Could be extended to track user reaction patterns in the future
+    if not update.message_reaction:
+        return
+
+    reaction_update = update.message_reaction
+    chat_id = reaction_update.chat.id
+
+    # Check if reaction tracking is enabled
+    if not config.yaml_config.reaction_system.track_reactions:
+        logger.debug(f"Reaction tracking disabled, ignoring reaction in chat {chat_id}")
+        return
+
+    try:
+        # Get the user who reacted
+        if not reaction_update.user:
+            logger.debug("Reaction update without user, ignoring")
+            return
+
+        user_id = reaction_update.user.id
+        bot_user_id = context.bot.id
+
+        # Don't track bot's own reactions
+        if user_id == bot_user_id:
+            logger.debug(f"Ignoring bot's own reaction in chat {chat_id}")
+            return
+
+        # Process new reactions (reactions that were added)
+        if reaction_update.new_reaction:
+            for reaction in reaction_update.new_reaction:
+                if hasattr(reaction, 'emoji') and reaction.emoji:
+                    emoji = reaction.emoji
+
+                    # Try to get the target message text for content analysis
+                    target_message_text = ""
+                    try:
+                        # Get the message that was reacted to
+                        target_message = await context.bot.get_chat_message(
+                            chat_id=chat_id,
+                            message_id=reaction_update.message_id
+                        )
+                        if target_message and target_message.text:
+                            target_message_text = target_message.text
+                    except Exception as e:
+                        logger.debug(f"Could not retrieve target message text: {e}")
+
+                    # Track the reaction in this specific chat
+                    profile_manager.track_reaction_in_chat(
+                        chat_id=chat_id,
+                        user_id=user_id,
+                        emoji=emoji,
+                        target_message_text=target_message_text
+                    )
+
+                    logger.debug(f"Tracked reaction {emoji} from user {user_id} in chat {chat_id}")
+
+        # Note: We don't currently track reaction removals, but this could be added later
+        # if reaction_update.old_reaction:
+        #     # Handle reaction removals if needed
+
+    except Exception as e:
+        logger.error(f"Error processing message reaction: {e}", exc_info=True)
 
 
 logger = logging.getLogger(__name__)
@@ -155,47 +210,44 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not is_private and message.from_user and message.from_user.id != bot_user_id:
         autonomous_commenter.add_message(chat_id, message)
 
-    # Route to appropriate command handler
-    if message.text.startswith('/joke'):
-        await handle_joke_command(update, context, is_private)
-        return
+    # Route to appropriate command handler using registry
+    if message.text.startswith('/'):
+        # Extract command name (remove leading slash and handle @username suffix)
+        command_text = message.text.strip()
+        if ' ' in command_text:
+            command_part = command_text.split()[0][1:]  # Remove '/' and get first word
+        else:
+            command_part = command_text[1:]  # Remove leading '/'
 
-    elif message.text.startswith('/ask'):
-        await handle_ask_command(update, context)
-        return
+        # Handle commands with @username suffix (e.g., /help@BotName)
+        if '@' in command_part:
+            command_name = command_part.split('@')[0]
+        else:
+            command_name = command_part
 
-    elif message.text.startswith('/help'):
-        await handle_help_command(update, context)
-        return
+        # Import registry and find command
+        from .commands import command_registry
+        command = command_registry.get_command(command_name)
 
-    elif message.text.startswith('/context'):
-        await handle_context_command(update, context)
-        return
-
-    # Admin-only commands
-    elif message.text.startswith('/reload'):
-        await handle_reload_command(update, context)
-        return
-
-    elif message.text.startswith('/comment'):
-        await handle_comment_command(update, context)
-        return
-
-    elif message.text.startswith('/profile'):
-        await handle_profile_command(update, context)
-        return
-
-    elif message.text.startswith('/chats'):
-        await handle_chats_command(update, context)
-        return
-
-    elif message.text.startswith('/setprompt'):
-        await handle_setprompt_command(update, context)
-        return
-
-    elif message.text.startswith('/saveprofiles'):
-        await handle_saveprofiles_command(update, context)
-        return
+        if command:
+            # Check if user can execute this command
+            user_id = message.from_user.id if message.from_user else 0
+            if command.can_execute(user_id, config):
+                await command.execute(update, context)
+                return
+            else:
+                await message.reply_text(
+                    "❌ You don't have permission to use this command.",
+                    reply_to_message_id=message.message_id
+                )
+                return
+        else:
+            # Unknown command
+            await message.reply_text(
+                f"❌ Unknown command: /{command_name}\n\nUse /help to see available commands.",
+                reply_to_message_id=message.message_id
+            )
+            return
 
     # In private chats, respond conversationally to all messages
     if is_private:

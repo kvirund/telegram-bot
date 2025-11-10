@@ -2,7 +2,7 @@
 import json
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field, asdict
 from telegram import Message
@@ -44,6 +44,23 @@ class ReactionPatterns:
     reaction_targets: List[str] = field(default_factory=list)  # Types of content they react to
     emotional_responses: Dict[str, int] = field(default_factory=dict)  # emotion_type: count
     total_reactions: int = 0
+
+
+@dataclass
+class ChatReaction:
+    """Individual reaction in a chat."""
+    user_id: int
+    emoji: str
+    timestamp: str
+    target_message_text: str = ""
+
+
+@dataclass
+class ChatReactions:
+    """Reactions in a specific chat."""
+    chat_id: int
+    reactions: List[ChatReaction] = field(default_factory=list)
+    last_updated: str = ""
 
 
 @dataclass
@@ -116,20 +133,23 @@ class ProfileManager:
     
     def __init__(self, profile_directory: str = "profiles"):
         """Initialize profile manager.
-        
+
         Args:
             profile_directory: Directory to store profile files
         """
         self.profile_directory = profile_directory
         self.profiles: Dict[int, UserProfile] = {}  # user_id -> profile
         self.chat_metadata: Dict[int, Dict[str, Any]] = {}  # chat_id -> metadata
-        
+        self.chat_reactions: Dict[int, ChatReactions] = {}  # chat_id -> chat reactions
+
         # Create directory structure
         self.users_dir = os.path.join(profile_directory, "users")
         self.chats_dir = os.path.join(profile_directory, "chats")
+        self.reactions_dir = os.path.join(profile_directory, "reactions")
         os.makedirs(self.users_dir, exist_ok=True)
         os.makedirs(self.chats_dir, exist_ok=True)
-        
+        os.makedirs(self.reactions_dir, exist_ok=True)
+
         logger.info(f"ProfileManager initialized with directory: {profile_directory}")
     
     def _get_user_profile_path(self, user_id: int) -> str:
@@ -145,14 +165,25 @@ class ProfileManager:
     
     def _get_chat_metadata_path(self, chat_id: int) -> str:
         """Get file path for chat metadata.
-        
+
         Args:
             chat_id: Chat ID
-            
+
         Returns:
             str: Path to chat metadata file
         """
         return os.path.join(self.chats_dir, f"chat_{chat_id}.json")
+
+    def _get_chat_reactions_path(self, chat_id: int) -> str:
+        """Get file path for chat reactions.
+
+        Args:
+            chat_id: Chat ID
+
+        Returns:
+            str: Path to chat reactions file
+        """
+        return os.path.join(self.reactions_dir, f"chat_{chat_id}_reactions.json")
     
     def load_profile(self, user_id: int) -> UserProfile:
         """Load user profile from disk or create new one.
@@ -398,11 +429,11 @@ class ProfileManager:
         chat_id: int
     ) -> Dict[int, str]:
         """Get profile summaries for multiple users.
-        
+
         Args:
             user_ids: List of user IDs
             chat_id: Chat ID for context
-            
+
         Returns:
             Dict mapping user_id to profile summary
         """
@@ -410,6 +441,156 @@ class ProfileManager:
         for user_id in user_ids:
             context[user_id] = self.get_profile_summary(user_id)
         return context
+
+    def load_chat_reactions(self, chat_id: int) -> ChatReactions:
+        """Load chat reactions from disk or create new one.
+
+        Args:
+            chat_id: Chat ID
+
+        Returns:
+            ChatReactions: Loaded or new chat reactions
+        """
+        # Check in-memory cache first
+        if chat_id in self.chat_reactions:
+            return self.chat_reactions[chat_id]
+
+        # Try to load from disk
+        reactions_path = self._get_chat_reactions_path(chat_id)
+        if os.path.exists(reactions_path):
+            try:
+                with open(reactions_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    reactions = ChatReactions(**data)
+                    # Convert reaction dictionaries back to ChatReaction objects
+                    reactions.reactions = [ChatReaction(**r) for r in reactions.reactions]
+                    self.chat_reactions[chat_id] = reactions
+                    logger.debug(f"Loaded reactions for chat {chat_id}")
+                    return reactions
+            except Exception as e:
+                logger.error(f"Error loading reactions for chat {chat_id}: {e}")
+
+        # Create new chat reactions
+        reactions = ChatReactions(chat_id=chat_id)
+        self.chat_reactions[chat_id] = reactions
+        logger.debug(f"Created new reactions tracking for chat {chat_id}")
+        return reactions
+
+    def save_chat_reactions(self, chat_id: int) -> bool:
+        """Save chat reactions to disk.
+
+        Args:
+            chat_id: Chat ID
+
+        Returns:
+            bool: True if successful
+        """
+        if chat_id not in self.chat_reactions:
+            logger.warning(f"No reactions to save for chat {chat_id}")
+            return False
+
+        try:
+            reactions = self.chat_reactions[chat_id]
+            reactions.last_updated = datetime.utcnow().isoformat()
+            reactions_path = self._get_chat_reactions_path(chat_id)
+
+            with open(reactions_path, 'w', encoding='utf-8') as f:
+                json.dump(asdict(reactions), f, indent=2, ensure_ascii=False)
+
+            logger.debug(f"Saved reactions for chat {chat_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error saving reactions for chat {chat_id}: {e}")
+            return False
+
+    def track_reaction_in_chat(
+        self,
+        chat_id: int,
+        user_id: int,
+        emoji: str,
+        target_message_text: str = ""
+    ) -> None:
+        """Track a reaction in a specific chat.
+
+        Args:
+            chat_id: Chat ID where reaction occurred
+            user_id: User who added the reaction
+            emoji: The emoji reaction added
+            target_message_text: Optional text of the message reacted to
+        """
+        # Load chat reactions
+        chat_reactions = self.load_chat_reactions(chat_id)
+
+        # Create new reaction
+        reaction = ChatReaction(
+            user_id=user_id,
+            emoji=emoji,
+            timestamp=datetime.utcnow().isoformat(),
+            target_message_text=target_message_text
+        )
+
+        # Add to chat reactions (keep only last 1000 reactions per chat)
+        chat_reactions.reactions.append(reaction)
+        if len(chat_reactions.reactions) > 1000:
+            chat_reactions.reactions = chat_reactions.reactions[-1000:]
+
+        # Also track in user profile for global patterns
+        self.track_reaction(user_id, emoji, target_message_text)
+
+        logger.debug(f"Tracked reaction {emoji} from user {user_id} in chat {chat_id}")
+
+    def get_recent_chat_reactions(self, chat_id: int, hours: int = 24) -> List[Dict[str, Any]]:
+        """Get recent reactions from a specific chat.
+
+        Args:
+            chat_id: Chat ID
+            hours: Hours to look back
+
+        Returns:
+            List of recent reaction data
+        """
+        chat_reactions = self.load_chat_reactions(chat_id)
+        cutoff_time = datetime.utcnow().replace(tzinfo=None) - timedelta(hours=hours)
+
+        recent_reactions = []
+        for reaction in chat_reactions.reactions:
+            try:
+                reaction_time = datetime.fromisoformat(reaction.timestamp).replace(tzinfo=None)
+                if reaction_time > cutoff_time:
+                    recent_reactions.append({
+                        'user_id': reaction.user_id,
+                        'emoji': reaction.emoji,
+                        'timestamp': reaction.timestamp,
+                        'target_message_text': reaction.target_message_text
+                    })
+            except Exception as e:
+                logger.warning(f"Error parsing reaction timestamp: {e}")
+
+        return recent_reactions
+
+    def get_all_chat_ids(self) -> List[int]:
+        """Get all chat IDs that have been tracked.
+
+        Returns:
+            List of chat IDs
+        """
+        chat_ids = set()
+
+        # Get chats from user profiles
+        for profile in self.profiles.values():
+            chat_ids.update(profile.chats)
+
+        # Get chats from reaction files
+        if os.path.exists(self.reactions_dir):
+            for filename in os.listdir(self.reactions_dir):
+                if filename.startswith('chat_') and filename.endswith('_reactions.json'):
+                    try:
+                        chat_id_str = filename.replace('chat_', '').replace('_reactions.json', '')
+                        chat_ids.add(int(chat_id_str))
+                    except ValueError:
+                        continue
+
+        return sorted(list(chat_ids))
     
     def track_reaction(
         self,
