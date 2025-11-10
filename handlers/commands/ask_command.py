@@ -6,6 +6,7 @@ from telegram.ext import ContextTypes
 from config import get_config
 from ai_providers import create_provider
 from .base import Command
+from .arguments import ArgumentDefinition, ArgumentType
 
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,20 @@ class AskCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(name="ask", description="Free-form AI request", admin_only=False)
+        arguments = [
+            ArgumentDefinition(
+                name="query",
+                type=ArgumentType.STRING,
+                required=True,
+                description="The AI query or request (supports 'system:<text> user:<text>' format)"
+            )
+        ]
+        super().__init__(
+            name="ask",
+            description="Send a free-form request to AI",
+            admin_only=False,
+            arguments=arguments
+        )
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /ask command for free-form requests.

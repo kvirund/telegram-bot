@@ -75,9 +75,24 @@ class Command(ABC):
             language: Language code ('en' or 'ru')
 
         Returns:
-            str: Help text for this command
+            str: Help text for this command (HTML escaped)
         """
-        help_text = f"{html.escape(self.command_name)} - {html.escape(self.description)}"
+        help_text = self._get_raw_help_text(language)
+        return html.escape(help_text)
+
+    def _get_raw_help_text(self, language: str = "en") -> str:
+        """Get raw help text for this command (without HTML escaping).
+
+        This method can be overridden by subclasses to provide custom help text.
+        The base implementation provides a standard format.
+
+        Args:
+            language: Language code ('en' or 'ru')
+
+        Returns:
+            str: Raw help text for this command
+        """
+        help_text = f"{self.command_name} - {self.description}"
 
         # Add argument help if arguments are defined
         if self.argument_parser:

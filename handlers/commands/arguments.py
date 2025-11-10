@@ -263,12 +263,13 @@ class ArgumentParser:
 
         # Escape HTML entities for safe HTML display
         help_text = "\n".join(lines)
-        return self._escape_html(help_text)
+        return help_text
 
     def _format_argument_help(self, arg_def: ArgumentDefinition, language: str) -> str:
         """Format help text for a single argument."""
         name = arg_def.name
         desc = arg_def.description or "No description"
+        range_text = ""
 
         if arg_def.type == ArgumentType.CHOICE:
             choices_text = f" (choices: {', '.join(arg_def.choices)})"
@@ -279,8 +280,6 @@ class ArgumentParser:
             if arg_def.max_value is not None:
                 range_parts.append(f"max: {arg_def.max_value}")
             range_text = f" ({', '.join(range_parts)})" if range_parts else ""
-        else:
-            range_text = ""
 
         default_text = f" [default: {arg_def.default}]" if arg_def.default is not None else ""
 

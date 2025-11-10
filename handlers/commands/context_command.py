@@ -7,6 +7,7 @@ from config import get_config
 from utils.context_extractor import message_history
 from utils.autonomous_commenter import AutonomousCommenter
 from .base import Command
+from .arguments import ArgumentDefinition, ArgumentType
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,20 @@ class ContextCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(name="context", description="Clear chat context (admin only)", admin_only=True)
+        arguments = [
+            ArgumentDefinition(
+                name="chat_id",
+                type=ArgumentType.INTEGER,
+                required=False,
+                description="Chat ID to clear context for (admin only, defaults to current chat)"
+            )
+        ]
+        super().__init__(
+            name="context",
+            description="Clear chat context (admin only)",
+            admin_only=True,
+            arguments=arguments
+        )
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /context command to reset/clear conversation context.

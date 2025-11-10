@@ -7,6 +7,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from config import get_config, reload_config
 from .base import Command
+from .arguments import ArgumentDefinition, ArgumentType
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,27 @@ class SetPromptCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(name="setprompt", description="Modify system prompts (admin only)", admin_only=True)
+        arguments = [
+            ArgumentDefinition(
+                name="type",
+                type=ArgumentType.CHOICE,
+                required=False,
+                choices=["joke_generation", "conversation", "autonomous_comment", "ai_decision", "mention_response"],
+                description="Type of prompt to modify"
+            ),
+            ArgumentDefinition(
+                name="prompt",
+                type=ArgumentType.STRING,
+                required=False,
+                description="New prompt text to set"
+            )
+        ]
+        super().__init__(
+            name="setprompt",
+            description="Modify system prompts (admin only)",
+            admin_only=True,
+            arguments=arguments
+        )
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /setprompt command to modify system prompts.

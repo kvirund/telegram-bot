@@ -1,7 +1,7 @@
 """Context extraction utility for fetching conversation history."""
 
 import logging
-from typing import List
+from typing import List, Dict, Any
 from telegram import Bot, Message
 
 
@@ -338,6 +338,33 @@ class MessageHistory:
             List of message dicts or None
         """
         return self.history.get(chat_id)
+
+    def get_all_messages_for_chat(self, chat_id: int) -> List[Dict[str, Any]]:
+        """Get all messages for a chat in the format expected by profile rebuilding.
+
+        Args:
+            chat_id: Chat ID
+
+        Returns:
+            List of message dictionaries with 'from' and 'text' keys
+        """
+        if chat_id not in self.history:
+            return []
+
+        # Convert stored message format to expected format
+        messages = []
+        for msg_data in self.history[chat_id]:
+            message_dict = {
+                "from": {
+                    "id": msg_data.get("user_id", 0),
+                    "first_name": msg_data.get("first_name", "Unknown"),
+                    "username": msg_data.get("username", "")
+                },
+                "text": msg_data.get("text", "")
+            }
+            messages.append(message_dict)
+
+        return messages
 
     def clear_chat_history(self, chat_id: int):
         """Clear all message history for a chat.

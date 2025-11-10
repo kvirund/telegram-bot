@@ -4,7 +4,7 @@ import logging
 import asyncio
 from typing import Optional
 from telegram import Update, BotCommand
-from telegram.ext import Application, MessageHandler, MessageReactionHandler, filters
+from telegram.ext import Application, MessageHandler, MessageReactionHandler, CallbackQueryHandler, filters
 from config import get_config
 from handlers.message_handler import handle_message, handle_message_reaction, auto_save_profiles, auto_save_context
 from utils.profile_manager import profile_manager
@@ -90,7 +90,11 @@ class BotService:
         # Register handler for message reactions
         self.app.add_handler(MessageReactionHandler(handle_message_reaction))
 
-        logger.info("Registered message and reaction handlers")
+        # Register callback query handler for interactive help
+        from handlers.commands.help_command import handle_help_callback
+        self.app.add_handler(CallbackQueryHandler(handle_help_callback, pattern=r"^help_"))
+
+        logger.info("Registered message, reaction, and callback query handlers")
 
     async def _error_handler(self, update: Update, context) -> None:
         """Handle errors that occur during update processing.
