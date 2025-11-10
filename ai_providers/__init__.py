@@ -1,4 +1,5 @@
 """AI provider factory module."""
+
 import logging
 from .base import AIProvider
 from .groq_provider import GroqProvider
@@ -9,9 +10,7 @@ from .local_provider import LocalProvider
 logger = logging.getLogger(__name__)
 
 
-def create_provider(
-    provider_type: str, api_key: str, model: str, base_url: str = None
-) -> AIProvider:
+def create_provider(provider_type: str, api_key: str, model: str, base_url: str = None) -> AIProvider:
     """Factory function to create AI provider instances.
 
     Args:
@@ -37,9 +36,7 @@ def create_provider(
     elif provider_type == "local":
         logger.info(f"Creating Local provider at {base_url}")
         default_url = "http://localhost:8000/v1"
-        return LocalProvider(
-            api_key=api_key, model=model, base_url=base_url or default_url
-        )
+        return LocalProvider(api_key=api_key, model=model, base_url=base_url or default_url)
     else:
         supported = "'groq', 'openrouter', or 'local'"
         raise ValueError(f"Unsupported provider type: {provider_type}. Must be {supported}")

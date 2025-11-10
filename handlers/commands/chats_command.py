@@ -1,4 +1,5 @@
 """Handle /chats command to list all chats where the bot is present."""
+
 import logging
 import html
 from telegram import Update
@@ -17,11 +18,7 @@ class ChatsCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(
-            name="chats",
-            description="List all active chats (admin only)",
-            admin_only=True
-        )
+        super().__init__(name="chats", description="List all active chats (admin only)", admin_only=True)
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /chats command to list all chats where the bot is present.
@@ -46,8 +43,7 @@ class ChatsCommand(Command):
         # Check admin privilege
         if user_id not in config.admin_user_ids:
             await message.reply_text(
-                "❌ Only administrators can view chat list.",
-                reply_to_message_id=message.message_id
+                "❌ Only administrators can view chat list.", reply_to_message_id=message.message_id
             )
             return
 
@@ -58,7 +54,7 @@ class ChatsCommand(Command):
             if not all_chats:
                 await message.reply_text(
                     "📭 No active chats found.\n\nThe bot hasn't received messages in any chats yet.",
-                    reply_to_message_id=message.message_id
+                    reply_to_message_id=message.message_id,
                 )
                 return
 
@@ -112,42 +108,28 @@ class ChatsCommand(Command):
                 # Split into multiple messages
                 parts = []
                 current = ""
-                for line in response.split('\n\n'):
+                for line in response.split("\n\n"):
                     if len(current) + len(line) + 2 > 4000:
                         parts.append(current)
-                        current = line + '\n\n'
+                        current = line + "\n\n"
                     else:
-                        current += line + '\n\n'
+                        current += line + "\n\n"
                 if current:
                     parts.append(current)
 
                 for i, part in enumerate(parts):
                     if i == 0:
-                        await message.reply_text(
-                            part,
-                            reply_to_message_id=message.message_id,
-                            parse_mode='HTML'
-                        )
+                        await message.reply_text(part, reply_to_message_id=message.message_id, parse_mode="HTML")
                     else:
-                        await message.reply_text(
-                            part,
-                            parse_mode='HTML'
-                        )
+                        await message.reply_text(part, parse_mode="HTML")
             else:
-                await message.reply_text(
-                    response,
-                    reply_to_message_id=message.message_id,
-                    parse_mode='HTML'
-                )
+                await message.reply_text(response, reply_to_message_id=message.message_id, parse_mode="HTML")
 
             logger.info(f"Chat list displayed for admin {user_id} ({len(all_chats)} chats)")
 
         except Exception as e:
             logger.error(f"Error in /chats command: {e}")
-            await message.reply_text(
-                f"❌ Error: {str(e)}",
-                reply_to_message_id=message.message_id
-            )
+            await message.reply_text(f"❌ Error: {str(e)}", reply_to_message_id=message.message_id)
 
 
 # Create and register the command instance

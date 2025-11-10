@@ -1,4 +1,5 @@
 """Handle /saveprofiles command to force save all profiles to disk."""
+
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -19,11 +20,7 @@ class SaveProfilesCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(
-            name="saveprofiles",
-            description="Force save all profiles (admin only)",
-            admin_only=True
-        )
+        super().__init__(name="saveprofiles", description="Force save all profiles (admin only)", admin_only=True)
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /saveprofiles command to force save all profiles to disk.
@@ -53,7 +50,7 @@ class SaveProfilesCommand(Command):
             logger.warning(f"/saveprofiles command attempted in group chat {message.chat_id} by user {user_id}")
             await message.reply_text(
                 "[X] This command can only be used in private chat with the bot.",
-                reply_to_message_id=message.message_id
+                reply_to_message_id=message.message_id,
             )
             return
 
@@ -61,8 +58,7 @@ class SaveProfilesCommand(Command):
         if user_id not in config.admin_user_ids:
             logger.warning(f"Unauthorized /saveprofiles attempt by user {user_id}")
             await message.reply_text(
-                "[X] Only administrators can force save profiles.",
-                reply_to_message_id=message.message_id
+                "[X] Only administrators can force save profiles.", reply_to_message_id=message.message_id
             )
             return
 
@@ -71,10 +67,7 @@ class SaveProfilesCommand(Command):
             profile_count = len(profile_manager.profiles)
 
             if profile_count == 0:
-                await message.reply_text(
-                    "[!] No profiles in memory to save.",
-                    reply_to_message_id=message.message_id
-                )
+                await message.reply_text("[!] No profiles in memory to save.", reply_to_message_id=message.message_id)
                 return
 
             # Save all profiles
@@ -87,26 +80,18 @@ class SaveProfilesCommand(Command):
             response += "Top 5 most active users:\n"
 
             # Sort profiles by message count
-            sorted_profiles = sorted(
-                profile_manager.profiles.items(),
-                key=lambda x: x[1].message_count,
-                reverse=True
-            )[:5]
+            sorted_profiles = sorted(profile_manager.profiles.items(), key=lambda x: x[1].message_count, reverse=True)[
+                :5
+            ]
 
             for user_id_prof, profile in sorted_profiles:
                 response += f"- {profile.first_name} (@{profile.username}): {profile.message_count} messages\n"
 
-            await message.reply_text(
-                response,
-                reply_to_message_id=message.message_id
-            )
+            await message.reply_text(response, reply_to_message_id=message.message_id)
 
         except Exception as e:
             logger.error(f"Error in /saveprofiles command: {e}")
-            await message.reply_text(
-                f"[X] Error saving profiles: {str(e)}",
-                reply_to_message_id=message.message_id
-            )
+            await message.reply_text(f"[X] Error saving profiles: {str(e)}", reply_to_message_id=message.message_id)
 
 
 # Create and register the command instance

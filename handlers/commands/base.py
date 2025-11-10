@@ -1,4 +1,5 @@
 """Base classes for command system."""
+
 import logging
 from abc import ABC, abstractmethod
 from typing import Callable, Any
@@ -30,6 +31,7 @@ class Command(ABC):
 
         # Register this command
         from .registry import command_registry
+
         command_registry.register_command(self)
 
     @abstractmethod
@@ -56,9 +58,9 @@ class Command(ABC):
             return True
 
         # Check if user is admin
-        return user_id in getattr(config, 'admin_user_ids', [])
+        return user_id in getattr(config, "admin_user_ids", [])
 
-    def get_help_text(self, language: str = 'en') -> str:
+    def get_help_text(self, language: str = "en") -> str:
         """Get help text for this command.
 
         Args:

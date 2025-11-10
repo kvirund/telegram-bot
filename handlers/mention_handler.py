@@ -1,4 +1,5 @@
 """Handle bot mentions in messages."""
+
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -29,7 +30,7 @@ def is_bot_mentioned(message, bot_username: str) -> bool:
         return True
 
     # Check for username without @ symbol
-    username_without_at = bot_username.replace('@', '').lower()
+    username_without_at = bot_username.replace("@", "").lower()
     if username_without_at in text:
         return True
 
@@ -37,7 +38,7 @@ def is_bot_mentioned(message, bot_username: str) -> bool:
     if message.entities:
         for entity in message.entities:
             if entity.type == "mention" or entity.type == "text_mention":
-                mention_text = message.text[entity.offset:entity.offset + entity.length]
+                mention_text = message.text[entity.offset : entity.offset + entity.length]
                 if bot_username.lower() in mention_text.lower():
                     return True
 
@@ -56,10 +57,7 @@ async def handle_mention(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     """
     config = get_config()
     ai_provider = create_provider(
-        provider_type=config.ai_provider,
-        api_key=config.api_key,
-        model=config.model_name,
-        base_url=config.base_url
+        provider_type=config.ai_provider, api_key=config.api_key, model=config.model_name, base_url=config.base_url
     )
 
     if not update.message:
@@ -73,10 +71,7 @@ async def handle_mention(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         logger.info(f"Bot mentioned in chat {chat_id}, generating response")
 
         # Get conversation context
-        conversation_context = message_history.get_context(
-            chat_id=chat_id,
-            count=config.context_messages_count
-        )
+        conversation_context = message_history.get_context(chat_id=chat_id, count=config.context_messages_count)
 
         # Get the mention_response system prompt
         system_prompt = config.yaml_config.system_prompts.mention_response
@@ -88,21 +83,12 @@ async def handle_mention(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             context_aware_message = f"Сообщение: {user_message}\n\nОтветь на это сообщение:"
 
         # Generate response using the mention_response prompt
-        response = await ai_provider.free_request(
-            user_message=context_aware_message,
-            system_message=system_prompt
-        )
+        response = await ai_provider.free_request(user_message=context_aware_message, system_message=system_prompt)
 
         # Send the response
-        await message.reply_text(
-            response,
-            reply_to_message_id=message.message_id
-        )
+        await message.reply_text(response, reply_to_message_id=message.message_id)
         logger.info(f"Successfully sent mention response to chat {chat_id}")
 
     except Exception as e:
         logger.error(f"Error handling mention: {e}")
-        await message.reply_text(
-            "Иди нахуй, у меня ошибка.",
-            reply_to_message_id=message.message_id
-        )
+        await message.reply_text("Иди нахуй, у меня ошибка.", reply_to_message_id=message.message_id)

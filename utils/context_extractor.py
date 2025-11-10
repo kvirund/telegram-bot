@@ -1,4 +1,5 @@
 """Context extraction utility for fetching conversation history."""
+
 import logging
 from typing import List
 from telegram import Bot, Message
@@ -29,11 +30,7 @@ async def extract_context(chat_id: int, message_id: int, count: int, bot: Bot) -
                 break
 
             try:
-                msg = await bot.forward_message(
-                    chat_id=chat_id,
-                    from_chat_id=chat_id,
-                    message_id=current_id
-                )
+                msg = await bot.forward_message(chat_id=chat_id, from_chat_id=chat_id, message_id=current_id)
                 # Delete the forwarded message immediately
                 await bot.delete_message(chat_id=chat_id, message_id=msg.message_id)
 
@@ -98,7 +95,7 @@ def sanitize_message(message: Message) -> str:
     text = message.text or message.caption or ""
 
     # Remove bot commands for cleaner context
-    if text.startswith('/'):
+    if text.startswith("/"):
         return ""
 
     # Truncate very long messages
@@ -113,8 +110,7 @@ def sanitize_message(message: Message) -> str:
 class MessageHistory:
     """Message history tracker with disk persistence and auto-expiration."""
 
-    def __init__(self, max_messages: int = 100, storage_dir: str = "context_history", 
-                 expiration_hours: int = 24):
+    def __init__(self, max_messages: int = 100, storage_dir: str = "context_history", expiration_hours: int = 24):
         """Initialize message history.
 
         Args:
@@ -129,6 +125,7 @@ class MessageHistory:
 
         # Create storage directory
         import os
+
         os.makedirs(storage_dir, exist_ok=True)
 
         # Load existing context from disk
@@ -147,20 +144,20 @@ class MessageHistory:
         expired_messages = 0
 
         for filename in os.listdir(self.storage_dir):
-            if not filename.endswith('.json'):
+            if not filename.endswith(".json"):
                 continue
 
             try:
-                chat_id = int(filename.replace('chat_', '').replace('.json', ''))
+                chat_id = int(filename.replace("chat_", "").replace(".json", ""))
                 filepath = os.path.join(self.storage_dir, filename)
 
-                with open(filepath, 'r', encoding='utf-8') as f:
+                with open(filepath, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
                 # Filter out expired messages
                 valid_messages = []
-                for msg_data in data.get('messages', []):
-                    if current_time - msg_data.get('timestamp', 0) < self.expiration_seconds:
+                for msg_data in data.get("messages", []):
+                    if current_time - msg_data.get("timestamp", 0) < self.expiration_seconds:
                         valid_messages.append(msg_data)
                     else:
                         expired_messages += 1
@@ -189,13 +186,10 @@ class MessageHistory:
                 continue
 
             try:
-                filepath = os.path.join(self.storage_dir, f'chat_{chat_id}.json')
-                data = {
-                    'chat_id': chat_id,
-                    'messages': messages
-                }
+                filepath = os.path.join(self.storage_dir, f"chat_{chat_id}.json")
+                data = {"chat_id": chat_id, "messages": messages}
 
-                with open(filepath, 'w', encoding='utf-8') as f:
+                with open(filepath, "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
 
                 saved_chats += 1
@@ -219,19 +213,19 @@ class MessageHistory:
 
         # Convert message to dict for JSON storage
         message_data = {
-            'text': message.text or '',
-            'user_id': message.from_user.id if message.from_user else 0,
-            'username': message.from_user.username if message.from_user else '',
-            'first_name': message.from_user.first_name if message.from_user else 'Unknown',
-            'timestamp': time.time(),
-            'message_id': message.message_id
+            "text": message.text or "",
+            "user_id": message.from_user.id if message.from_user else 0,
+            "username": message.from_user.username if message.from_user else "",
+            "first_name": message.from_user.first_name if message.from_user else "Unknown",
+            "timestamp": time.time(),
+            "message_id": message.message_id,
         }
 
         self.history[chat_id].append(message_data)
 
         # Keep only the last N messages
         if len(self.history[chat_id]) > self.max_messages:
-            self.history[chat_id] = self.history[chat_id][-self.max_messages:]
+            self.history[chat_id] = self.history[chat_id][-self.max_messages :]
 
         # Save to disk periodically (every 10 messages)
         if len(self.history[chat_id]) % 10 == 0:
@@ -255,14 +249,14 @@ class MessageHistory:
         # Format message dicts into context string
         context_lines = []
         for msg_data in recent_messages:
-            text = msg_data.get('text', '').strip()
-            if text and not text.startswith('/'):
+            text = msg_data.get("text", "").strip()
+            if text and not text.startswith("/"):
                 # Use @username if available, otherwise fall back to first_name
-                username = msg_data.get('username', '')
+                username = msg_data.get("username", "")
                 if username:
                     user_name = f"@{username}"
                 else:
-                    user_name = msg_data.get('first_name', 'Unknown')
+                    user_name = msg_data.get("first_name", "Unknown")
                 # Truncate long messages
                 if len(text) > 200:
                     text = text[:200] + "..."
@@ -285,10 +279,7 @@ class MessageHistory:
             return ""
 
         # Filter messages for this specific user
-        user_messages = [
-            msg for msg in self.history[chat_id]
-            if msg.get('user_id') == user_id
-        ]
+        user_messages = [msg for msg in self.history[chat_id] if msg.get("user_id") == user_id]
 
         # Get most recent messages
         recent = user_messages[-count:]
@@ -296,8 +287,8 @@ class MessageHistory:
         # Format into context string (just the text, no username prefix since it's all one user)
         message_lines = []
         for msg_data in recent:
-            text = msg_data.get('text', '').strip()
-            if text and not text.startswith('/'):
+            text = msg_data.get("text", "").strip()
+            if text and not text.startswith("/"):
                 # Don't truncate - we want full context for profiling
                 message_lines.append(text)
 
@@ -312,8 +303,7 @@ class MessageHistory:
 
         for chat_id in list(self.history.keys()):
             valid_messages = [
-                msg for msg in self.history[chat_id]
-                if current_time - msg.get('timestamp', 0) < self.expiration_seconds
+                msg for msg in self.history[chat_id] if current_time - msg.get("timestamp", 0) < self.expiration_seconds
             ]
             removed_count += len(self.history[chat_id]) - len(valid_messages)
 
@@ -362,7 +352,7 @@ class MessageHistory:
             logger.info(f"Cleared message history for chat {chat_id}")
 
         # Also remove the file
-        filepath = os.path.join(self.storage_dir, f'chat_{chat_id}.json')
+        filepath = os.path.join(self.storage_dir, f"chat_{chat_id}.json")
         if os.path.exists(filepath):
             try:
                 os.remove(filepath)

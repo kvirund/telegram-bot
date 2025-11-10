@@ -1,4 +1,5 @@
 """Shared pytest fixtures and configuration for all tests."""
+
 import pytest
 import asyncio
 import tempfile
@@ -14,6 +15,7 @@ from telegram.ext import ContextTypes
 @dataclass
 class MockConfig:
     """Mock configuration for testing."""
+
     telegram_token: str = "test_token_123"
     bot_username: str = "@testbot"
     ai_provider: str = "local"
@@ -115,9 +117,9 @@ def reset_singletons():
     import sys
 
     # Clear config singleton
-    if 'config' in sys.modules:
-        config_module = sys.modules['config']
-        if hasattr(config_module, '_config'):
+    if "config" in sys.modules:
+        config_module = sys.modules["config"]
+        if hasattr(config_module, "_config"):
             config_module._config = None
 
     yield

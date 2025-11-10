@@ -1,4 +1,5 @@
 """Help command handler for the Telegram bot."""
+
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -21,11 +22,7 @@ class HelpCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(
-            name="help",
-            description="Show help message with available commands",
-            admin_only=False
-        )
+        super().__init__(name="help", description="Show help message with available commands", admin_only=False)
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /help command - show available commands based on user privilege level.
@@ -54,18 +51,18 @@ class HelpCommand(Command):
         forced_language = parts[1].lower() if len(parts) > 1 else None
 
         # Determine language
-        if forced_language in ['ru', 'russian', 'русский']:
-            language = 'ru'
-        elif forced_language in ['en', 'english', 'английский']:
-            language = 'en'
+        if forced_language in ["ru", "russian", "русский"]:
+            language = "ru"
+        elif forced_language in ["en", "english", "английский"]:
+            language = "en"
         else:
             # Auto-detect from user profile
             user_profile = profile_manager.load_profile(user_id)
             if user_profile and user_profile.language_preference:
-                language = 'ru' if user_profile.language_preference == 'ru' else 'en'
+                language = "ru" if user_profile.language_preference == "ru" else "en"
             else:
                 # Default to Russian for Russian-speaking chats
-                language = 'ru'
+                language = "ru"
 
         # Get config for user permission check
         config = get_config()
@@ -73,11 +70,7 @@ class HelpCommand(Command):
         # Generate help text using the registry
         help_text = command_registry.generate_help_text(user_id, config, language)
 
-        await message.reply_text(
-            help_text,
-            reply_to_message_id=message.message_id,
-            parse_mode='HTML'
-        )
+        await message.reply_text(help_text, reply_to_message_id=message.message_id, parse_mode="HTML")
         logger.info(f"Sent {language} help to user {user_id} ({username})")
 
 

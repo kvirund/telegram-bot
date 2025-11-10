@@ -1,4 +1,5 @@
 """Bot service for managing Telegram bot initialization and lifecycle."""
+
 import logging
 import asyncio
 from typing import Optional
@@ -190,8 +191,7 @@ class BotService:
 
         # Run polling (this is blocking and manages its own event loop)
         self.app.run_polling(
-            allowed_updates=Update.ALL_TYPES,
-            drop_pending_updates=True  # Drop pending updates on start
+            allowed_updates=Update.ALL_TYPES, drop_pending_updates=True  # Drop pending updates on start
         )
 
     def start(self) -> None:

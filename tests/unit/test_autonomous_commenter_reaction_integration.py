@@ -1,4 +1,5 @@
 """Tests for autonomous commenter reaction integration."""
+
 import pytest
 from unittest.mock import MagicMock, patch
 from utils.autonomous_commenter import AutonomousCommenter
@@ -30,12 +31,12 @@ class TestAutonomousCommenterReactionIntegration:
 
     def test_adjust_probability_very_positive_mood(self, autonomous_commenter):
         """Test probability adjustment for very positive mood."""
-        with patch('utils.autonomous_commenter.reaction_analytics') as mock_analytics:
+        with patch("utils.autonomous_commenter.reaction_analytics") as mock_analytics:
             mock_analytics.get_group_mood.return_value = {
-                'overall_mood': 'Very Positive',
-                'positive_percentage': 70,
-                'negative_percentage': 10,
-                'neutral_percentage': 20
+                "overall_mood": "Very Positive",
+                "positive_percentage": 70,
+                "negative_percentage": 10,
+                "neutral_percentage": 20,
             }
 
             adjusted = autonomous_commenter._adjust_probability_based_on_reactions(123456, 0.5)
@@ -43,12 +44,12 @@ class TestAutonomousCommenterReactionIntegration:
 
     def test_adjust_probability_negative_mood(self, autonomous_commenter):
         """Test probability adjustment for negative mood."""
-        with patch('utils.autonomous_commenter.reaction_analytics') as mock_analytics:
+        with patch("utils.autonomous_commenter.reaction_analytics") as mock_analytics:
             mock_analytics.get_group_mood.return_value = {
-                'overall_mood': 'Negative',
-                'positive_percentage': 20,
-                'negative_percentage': 60,
-                'neutral_percentage': 20
+                "overall_mood": "Negative",
+                "positive_percentage": 20,
+                "negative_percentage": 60,
+                "neutral_percentage": 20,
             }
 
             adjusted = autonomous_commenter._adjust_probability_based_on_reactions(123456, 0.5)
@@ -56,12 +57,12 @@ class TestAutonomousCommenterReactionIntegration:
 
     def test_adjust_probability_mixed_mood(self, autonomous_commenter):
         """Test probability adjustment for mixed mood."""
-        with patch('utils.autonomous_commenter.reaction_analytics') as mock_analytics:
+        with patch("utils.autonomous_commenter.reaction_analytics") as mock_analytics:
             mock_analytics.get_group_mood.return_value = {
-                'overall_mood': 'Mixed',
-                'positive_percentage': 35,
-                'negative_percentage': 35,
-                'neutral_percentage': 30
+                "overall_mood": "Mixed",
+                "positive_percentage": 35,
+                "negative_percentage": 35,
+                "neutral_percentage": 30,
             }
 
             adjusted = autonomous_commenter._adjust_probability_based_on_reactions(123456, 0.5)
@@ -69,12 +70,12 @@ class TestAutonomousCommenterReactionIntegration:
 
     def test_adjust_probability_positive_mood_no_change(self, autonomous_commenter):
         """Test that positive mood doesn't change probability."""
-        with patch('utils.autonomous_commenter.reaction_analytics') as mock_analytics:
+        with patch("utils.autonomous_commenter.reaction_analytics") as mock_analytics:
             mock_analytics.get_group_mood.return_value = {
-                'overall_mood': 'Positive',
-                'positive_percentage': 50,
-                'negative_percentage': 20,
-                'neutral_percentage': 30
+                "overall_mood": "Positive",
+                "positive_percentage": 50,
+                "negative_percentage": 20,
+                "neutral_percentage": 30,
             }
 
             adjusted = autonomous_commenter._adjust_probability_based_on_reactions(123456, 0.5)
@@ -82,7 +83,7 @@ class TestAutonomousCommenterReactionIntegration:
 
     def test_adjust_probability_error_handling(self, autonomous_commenter):
         """Test error handling in probability adjustment."""
-        with patch('utils.autonomous_commenter.reaction_analytics') as mock_analytics:
+        with patch("utils.autonomous_commenter.reaction_analytics") as mock_analytics:
             mock_analytics.get_group_mood.side_effect = Exception("API Error")
 
             adjusted = autonomous_commenter._adjust_probability_based_on_reactions(123456, 0.5)
@@ -97,16 +98,16 @@ class TestAutonomousCommenterReactionIntegration:
         state.next_comment_threshold = 8
 
         # Mock positive mood to increase probability
-        with patch('utils.autonomous_commenter.reaction_analytics') as mock_analytics:
+        with patch("utils.autonomous_commenter.reaction_analytics") as mock_analytics:
             mock_analytics.get_group_mood.return_value = {
-                'overall_mood': 'Very Positive',
-                'positive_percentage': 70,
-                'negative_percentage': 10,
-                'neutral_percentage': 20
+                "overall_mood": "Very Positive",
+                "positive_percentage": 70,
+                "negative_percentage": 10,
+                "neutral_percentage": 20,
             }
 
             # Mock random to be just above the adjusted threshold
-            with patch('random.random', return_value=0.55):  # Below 0.6 adjusted probability
+            with patch("random.random", return_value=0.55):  # Below 0.6 adjusted probability
                 result = autonomous_commenter.should_comment(123456, 999999)
                 # Should return True because 0.55 < 0.6 (adjusted probability)
 
@@ -119,15 +120,15 @@ class TestAutonomousCommenterReactionIntegration:
         state.next_comment_threshold = 8
 
         # Mock negative mood to decrease probability
-        with patch('utils.autonomous_commenter.reaction_analytics') as mock_analytics:
+        with patch("utils.autonomous_commenter.reaction_analytics") as mock_analytics:
             mock_analytics.get_group_mood.return_value = {
-                'overall_mood': 'Negative',
-                'positive_percentage': 20,
-                'negative_percentage': 60,
-                'neutral_percentage': 20
+                "overall_mood": "Negative",
+                "positive_percentage": 20,
+                "negative_percentage": 60,
+                "neutral_percentage": 20,
             }
 
             # Mock random to be above the reduced threshold
-            with patch('random.random', return_value=0.4):  # Above 0.35 adjusted probability
+            with patch("random.random", return_value=0.4):  # Above 0.35 adjusted probability
                 result = autonomous_commenter.should_comment(123456, 999999)
                 # Should return False because 0.4 > 0.35 (adjusted probability)

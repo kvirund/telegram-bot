@@ -1,4 +1,5 @@
 """Abstract base class for AI providers."""
+
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -7,9 +8,7 @@ class AIProvider(ABC):
     """Abstract base class for AI joke generation providers."""
 
     @abstractmethod
-    async def generate_joke(
-        self, context: str = None, is_contextual: bool = False
-    ) -> str:
+    async def generate_joke(self, context: str = None, is_contextual: bool = False) -> str:
         """Generate a Russian joke.
 
         Args:
@@ -27,9 +26,7 @@ class AIProvider(ABC):
         pass
 
     @abstractmethod
-    async def free_request(
-        self, user_message: str, system_message: Optional[str] = None
-    ) -> str:
+    async def free_request(self, user_message: str, system_message: Optional[str] = None) -> str:
         """Make a free-form request to the AI model.
 
         Args:
@@ -54,9 +51,7 @@ class AIProvider(ABC):
         pass
 
     @abstractmethod
-    async def generate_autonomous_comment(
-        self, prompt: str, language: str = "en"
-    ) -> str:
+    async def generate_autonomous_comment(self, prompt: str, language: str = "en") -> str:
         """Generate an autonomous comment for the chat.
 
         Args:

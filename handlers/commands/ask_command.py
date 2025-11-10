@@ -1,4 +1,5 @@
 """Ask command handler for free-form AI requests."""
+
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -19,11 +20,7 @@ class AskCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(
-            name="ask",
-            description="Free-form AI request",
-            admin_only=False
-        )
+        super().__init__(name="ask", description="Free-form AI request", admin_only=False)
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /ask command for free-form requests.
@@ -53,7 +50,7 @@ class AskCommand(Command):
                 provider_type=config.ai_provider,
                 api_key=config.api_key,
                 model=config.model_name,
-                base_url=config.base_url
+                base_url=config.base_url,
             )
 
             # Parse command
@@ -65,7 +62,7 @@ class AskCommand(Command):
                     "Использование:\n"
                     "/ask <ваш запрос> - простой запрос\n"
                     "/ask system:<системное сообщение> user:<запрос пользователя> - с системным промптом",
-                    reply_to_message_id=message.message_id
+                    reply_to_message_id=message.message_id,
                 )
                 return
 
@@ -74,18 +71,18 @@ class AskCommand(Command):
             user_message = None
 
             # Check if using system/user format
-            if 'system:' in request_text and 'user:' in request_text:
+            if "system:" in request_text and "user:" in request_text:
                 # Extract system and user messages
-                system_start = request_text.find('system:') + 7
-                user_start = request_text.find('user:')
+                system_start = request_text.find("system:") + 7
+                user_start = request_text.find("user:")
 
                 if system_start < user_start:
                     system_message = request_text[system_start:user_start].strip()
-                    user_message = request_text[user_start + 5:].strip()
+                    user_message = request_text[user_start + 5 :].strip()
                 else:
                     await message.reply_text(
                         "Неверный формат. Используйте: /ask system:<текст> user:<текст>",
-                        reply_to_message_id=message.message_id
+                        reply_to_message_id=message.message_id,
                     )
                     return
             else:
@@ -94,31 +91,24 @@ class AskCommand(Command):
 
             if not user_message:
                 await message.reply_text(
-                    "Запрос пользователя не может быть пустым",
-                    reply_to_message_id=message.message_id
+                    "Запрос пользователя не может быть пустым", reply_to_message_id=message.message_id
                 )
                 return
 
             logger.info(f"Processing free request in chat {chat_id}")
 
             # Make the request
-            response = await ai_provider.free_request(
-                user_message=user_message,
-                system_message=system_message
-            )
+            response = await ai_provider.free_request(user_message=user_message, system_message=system_message)
 
             # Send response
-            await message.reply_text(
-                response,
-                reply_to_message_id=message.message_id
-            )
+            await message.reply_text(response, reply_to_message_id=message.message_id)
             logger.info(f"Successfully sent response to chat {chat_id}")
 
         except Exception as e:
             logger.error(f"Error handling /ask command: {e}")
             await message.reply_text(
                 "Извините, произошла ошибка при обработке запроса. Попробуйте позже.",
-                reply_to_message_id=message.message_id
+                reply_to_message_id=message.message_id,
             )
 
 

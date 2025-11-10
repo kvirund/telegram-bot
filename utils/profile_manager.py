@@ -1,4 +1,5 @@
 """User profile management for tracking user behavior and weaknesses."""
+
 import json
 import os
 import logging
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SpeakingStyle:
     """User's speaking style characteristics."""
+
     tone: str = "neutral"  # casual, formal, sarcastic, etc.
     vocabulary_level: str = "medium"  # basic, medium, technical, advanced
     emoji_usage: str = "moderate"  # rare, moderate, frequent
@@ -24,6 +26,7 @@ class SpeakingStyle:
 @dataclass
 class UserWeaknesses:
     """User's weaknesses categorized by type."""
+
     technical: List[str] = field(default_factory=list)
     personal: List[str] = field(default_factory=list)
     social: List[str] = field(default_factory=list)
@@ -32,6 +35,7 @@ class UserWeaknesses:
 @dataclass
 class UserPatterns:
     """User's behavioral patterns."""
+
     common_mistakes: List[str] = field(default_factory=list)
     repeated_behaviors: List[str] = field(default_factory=list)
     contradictions: List[str] = field(default_factory=list)
@@ -40,6 +44,7 @@ class UserPatterns:
 @dataclass
 class ReactionPatterns:
     """User's reaction usage patterns."""
+
     favorite_reactions: Dict[str, int] = field(default_factory=dict)  # emoji: count
     reaction_targets: List[str] = field(default_factory=list)  # Types of content they react to
     emotional_responses: Dict[str, int] = field(default_factory=dict)  # emotion_type: count
@@ -49,6 +54,7 @@ class ReactionPatterns:
 @dataclass
 class ChatReaction:
     """Individual reaction in a chat."""
+
     user_id: int
     emoji: str
     timestamp: str
@@ -58,6 +64,7 @@ class ChatReaction:
 @dataclass
 class ChatReactions:
     """Reactions in a specific chat."""
+
     chat_id: int
     reactions: List[ChatReaction] = field(default_factory=list)
     last_updated: str = ""
@@ -66,6 +73,7 @@ class ChatReactions:
 @dataclass
 class RoastHistory:
     """Track roasting effectiveness."""
+
     successful_roasts: int = 0
     topics_hit: List[str] = field(default_factory=list)
     reactions: str = "unknown"  # laughs, defends, ignores, etc.
@@ -75,6 +83,7 @@ class RoastHistory:
 @dataclass
 class UserProfile:
     """Complete user profile with all tracked information."""
+
     user_id: int
     username: str = ""
     first_name: str = ""
@@ -111,19 +120,19 @@ class UserProfile:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'UserProfile':
+    def from_dict(cls, data: Dict[str, Any]) -> "UserProfile":
         """Create profile from dictionary."""
         # Convert nested dataclasses
-        if 'speaking_style' in data and isinstance(data['speaking_style'], dict):
-            data['speaking_style'] = SpeakingStyle(**data['speaking_style'])
-        if 'weaknesses' in data and isinstance(data['weaknesses'], dict):
-            data['weaknesses'] = UserWeaknesses(**data['weaknesses'])
-        if 'patterns' in data and isinstance(data['patterns'], dict):
-            data['patterns'] = UserPatterns(**data['patterns'])
-        if 'roast_history' in data and isinstance(data['roast_history'], dict):
-            data['roast_history'] = RoastHistory(**data['roast_history'])
-        if 'reaction_patterns' in data and isinstance(data['reaction_patterns'], dict):
-            data['reaction_patterns'] = ReactionPatterns(**data['reaction_patterns'])
+        if "speaking_style" in data and isinstance(data["speaking_style"], dict):
+            data["speaking_style"] = SpeakingStyle(**data["speaking_style"])
+        if "weaknesses" in data and isinstance(data["weaknesses"], dict):
+            data["weaknesses"] = UserWeaknesses(**data["weaknesses"])
+        if "patterns" in data and isinstance(data["patterns"], dict):
+            data["patterns"] = UserPatterns(**data["patterns"])
+        if "roast_history" in data and isinstance(data["roast_history"], dict):
+            data["roast_history"] = RoastHistory(**data["roast_history"])
+        if "reaction_patterns" in data and isinstance(data["reaction_patterns"], dict):
+            data["reaction_patterns"] = ReactionPatterns(**data["reaction_patterns"])
 
         return cls(**data)
 
@@ -202,7 +211,7 @@ class ProfileManager:
         profile_path = self._get_user_profile_path(user_id)
         if os.path.exists(profile_path):
             try:
-                with open(profile_path, 'r', encoding='utf-8') as f:
+                with open(profile_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     profile = UserProfile.from_dict(data)
                     self.profiles[user_id] = profile
@@ -212,10 +221,7 @@ class ProfileManager:
                 logger.error(f"Error loading profile for user {user_id}: {e}")
 
         # Create new profile
-        profile = UserProfile(
-            user_id=user_id,
-            first_seen=datetime.utcnow().isoformat()
-        )
+        profile = UserProfile(user_id=user_id, first_seen=datetime.utcnow().isoformat())
         self.profiles[user_id] = profile
         logger.info(f"Created new profile for user {user_id}")
         return profile
@@ -237,7 +243,7 @@ class ProfileManager:
             profile = self.profiles[user_id]
             profile_path = self._get_user_profile_path(user_id)
 
-            with open(profile_path, 'w', encoding='utf-8') as f:
+            with open(profile_path, "w", encoding="utf-8") as f:
                 json.dump(profile.to_dict(), f, indent=2, ensure_ascii=False)
 
             logger.debug(f"Saved profile for user {user_id}")
@@ -279,17 +285,12 @@ class ProfileManager:
         # Detect language (simple heuristic)
         if message.text:
             # Cyrillic characters indicate Russian
-            if any('\u0400' <= char <= '\u04FF' for char in message.text):
+            if any("\u0400" <= char <= "\u04ff" for char in message.text):
                 profile.language_preference = "ru"
             elif profile.language_preference == "":
                 profile.language_preference = "en"
 
-    async def enrich_profile_with_ai(
-        self,
-        user_id: int,
-        recent_messages: str,
-        ai_analyzer
-    ) -> None:
+    async def enrich_profile_with_ai(self, user_id: int, recent_messages: str, ai_analyzer) -> None:
         """Use AI to extract deeper insights from messages.
 
         Args:
@@ -328,59 +329,58 @@ class ProfileManager:
 
 Если нет данных - пустой массив []. НЕ придумывай."""
 
-            system_prompt = "Ты аналитик текста. Отвечай ТОЛЬКО JSON. Анализируй ТОЛЬКО реальный текст выше. Не придумывай."
+            system_prompt = (
+                "Ты аналитик текста. Отвечай ТОЛЬКО JSON. Анализируй ТОЛЬКО реальный текст выше. Не придумывай."
+            )
 
             # Get AI analysis
-            response = await ai_analyzer.free_request(
-                user_message=analysis_prompt,
-                system_message=system_prompt
-            )
+            response = await ai_analyzer.free_request(user_message=analysis_prompt, system_message=system_prompt)
 
             # Parse JSON response
             # Clean response - remove markdown code blocks if present
             response_clean = response.strip()
-            if response_clean.startswith('```'):
-                response_clean = response_clean.split('```')[1]
-                if response_clean.startswith('json'):
+            if response_clean.startswith("```"):
+                response_clean = response_clean.split("```")[1]
+                if response_clean.startswith("json"):
                     response_clean = response_clean[4:]
             response_clean = response_clean.strip()
 
             analysis = json.loads(response_clean)
 
             # Update profile with AI insights
-            if 'interests' in analysis:
-                for interest in analysis['interests']:
+            if "interests" in analysis:
+                for interest in analysis["interests"]:
                     if interest and interest not in profile.interests:
                         profile.interests.append(interest)
                 # Keep only last 10
                 profile.interests = profile.interests[-10:]
 
-            if 'technical_weaknesses' in analysis:
-                for weakness in analysis['technical_weaknesses']:
+            if "technical_weaknesses" in analysis:
+                for weakness in analysis["technical_weaknesses"]:
                     if weakness and weakness not in profile.weaknesses.technical:
                         profile.weaknesses.technical.append(weakness)
                 profile.weaknesses.technical = profile.weaknesses.technical[-5:]
 
-            if 'personal_weaknesses' in analysis:
-                for weakness in analysis['personal_weaknesses']:
+            if "personal_weaknesses" in analysis:
+                for weakness in analysis["personal_weaknesses"]:
                     if weakness and weakness not in profile.weaknesses.personal:
                         profile.weaknesses.personal.append(weakness)
                 profile.weaknesses.personal = profile.weaknesses.personal[-5:]
 
-            if 'speaking_tone' in analysis:
-                profile.speaking_style.tone = analysis['speaking_tone']
+            if "speaking_tone" in analysis:
+                profile.speaking_style.tone = analysis["speaking_tone"]
 
-            if 'humor_type' in analysis:
-                profile.humor_type = analysis['humor_type']
+            if "humor_type" in analysis:
+                profile.humor_type = analysis["humor_type"]
 
-            if 'common_mistakes' in analysis:
-                for mistake in analysis['common_mistakes']:
+            if "common_mistakes" in analysis:
+                for mistake in analysis["common_mistakes"]:
                     if mistake and mistake not in profile.patterns.common_mistakes:
                         profile.patterns.common_mistakes.append(mistake)
                 profile.patterns.common_mistakes = profile.patterns.common_mistakes[-5:]
 
-            if 'embarrassing_moments' in analysis:
-                for moment in analysis['embarrassing_moments']:
+            if "embarrassing_moments" in analysis:
+                for moment in analysis["embarrassing_moments"]:
                     if moment and moment not in profile.embarrassing_moments:
                         profile.embarrassing_moments.append(moment)
                 profile.embarrassing_moments = profile.embarrassing_moments[-5:]
@@ -423,11 +423,7 @@ class ProfileManager:
 
         return "\n".join(parts)
 
-    def get_merged_context(
-        self,
-        user_ids: List[int],
-        chat_id: int
-    ) -> Dict[int, str]:
+    def get_merged_context(self, user_ids: List[int], chat_id: int) -> Dict[int, str]:
         """Get profile summaries for multiple users.
 
         Args:
@@ -459,7 +455,7 @@ class ProfileManager:
         reactions_path = self._get_chat_reactions_path(chat_id)
         if os.path.exists(reactions_path):
             try:
-                with open(reactions_path, 'r', encoding='utf-8') as f:
+                with open(reactions_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     reactions = ChatReactions(**data)
                     # Convert reaction dictionaries back to ChatReaction objects
@@ -494,7 +490,7 @@ class ProfileManager:
             reactions.last_updated = datetime.utcnow().isoformat()
             reactions_path = self._get_chat_reactions_path(chat_id)
 
-            with open(reactions_path, 'w', encoding='utf-8') as f:
+            with open(reactions_path, "w", encoding="utf-8") as f:
                 json.dump(asdict(reactions), f, indent=2, ensure_ascii=False)
 
             logger.debug(f"Saved reactions for chat {chat_id}")
@@ -503,13 +499,7 @@ class ProfileManager:
             logger.error(f"Error saving reactions for chat {chat_id}: {e}")
             return False
 
-    def track_reaction_in_chat(
-        self,
-        chat_id: int,
-        user_id: int,
-        emoji: str,
-        target_message_text: str = ""
-    ) -> None:
+    def track_reaction_in_chat(self, chat_id: int, user_id: int, emoji: str, target_message_text: str = "") -> None:
         """Track a reaction in a specific chat.
 
         Args:
@@ -526,7 +516,7 @@ class ProfileManager:
             user_id=user_id,
             emoji=emoji,
             timestamp=datetime.utcnow().isoformat(),
-            target_message_text=target_message_text
+            target_message_text=target_message_text,
         )
 
         # Add to chat reactions (keep only last 1000 reactions per chat)
@@ -557,12 +547,14 @@ class ProfileManager:
             try:
                 reaction_time = datetime.fromisoformat(reaction.timestamp).replace(tzinfo=None)
                 if reaction_time > cutoff_time:
-                    recent_reactions.append({
-                        'user_id': reaction.user_id,
-                        'emoji': reaction.emoji,
-                        'timestamp': reaction.timestamp,
-                        'target_message_text': reaction.target_message_text
-                    })
+                    recent_reactions.append(
+                        {
+                            "user_id": reaction.user_id,
+                            "emoji": reaction.emoji,
+                            "timestamp": reaction.timestamp,
+                            "target_message_text": reaction.target_message_text,
+                        }
+                    )
             except Exception as e:
                 logger.warning(f"Error parsing reaction timestamp: {e}")
 
@@ -583,21 +575,16 @@ class ProfileManager:
         # Get chats from reaction files
         if os.path.exists(self.reactions_dir):
             for filename in os.listdir(self.reactions_dir):
-                if filename.startswith('chat_') and filename.endswith('_reactions.json'):
+                if filename.startswith("chat_") and filename.endswith("_reactions.json"):
                     try:
-                        chat_id_str = filename.replace('chat_', '').replace('_reactions.json', '')
+                        chat_id_str = filename.replace("chat_", "").replace("_reactions.json", "")
                         chat_ids.add(int(chat_id_str))
                     except ValueError:
                         continue
 
         return sorted(list(chat_ids))
 
-    def track_reaction(
-        self,
-        user_id: int,
-        emoji: str,
-        target_message_text: str = ""
-    ) -> None:
+    def track_reaction(self, user_id: int, emoji: str, target_message_text: str = "") -> None:
         """Track user's reaction to a message.
 
         Args:
@@ -620,43 +607,40 @@ class ProfileManager:
             target_lower = target_message_text.lower()
 
             # Detect what type of content they react to
-            if any(word in target_lower for word in ['joke', 'funny', '😂', '😄', 'haha', 'lol']):
-                if 'humor' not in profile.reaction_patterns.reaction_targets:
-                    profile.reaction_patterns.reaction_targets.append('humor')
-            elif any(word in target_lower for word in ['news', 'update', 'announcement']):
-                if 'news' not in profile.reaction_patterns.reaction_targets:
-                    profile.reaction_patterns.reaction_targets.append('news')
-            elif any(word in target_lower for word in ['?', 'question', 'how', 'what', 'why']):
-                if 'questions' not in profile.reaction_patterns.reaction_targets:
-                    profile.reaction_patterns.reaction_targets.append('questions')
+            if any(word in target_lower for word in ["joke", "funny", "😂", "😄", "haha", "lol"]):
+                if "humor" not in profile.reaction_patterns.reaction_targets:
+                    profile.reaction_patterns.reaction_targets.append("humor")
+            elif any(word in target_lower for word in ["news", "update", "announcement"]):
+                if "news" not in profile.reaction_patterns.reaction_targets:
+                    profile.reaction_patterns.reaction_targets.append("news")
+            elif any(word in target_lower for word in ["?", "question", "how", "what", "why"]):
+                if "questions" not in profile.reaction_patterns.reaction_targets:
+                    profile.reaction_patterns.reaction_targets.append("questions")
 
         # Categorize emotional response
-        positive_emojis = ['👍', '❤️', '🔥', '😊', '😂', '🎉', '✅', '💯']
-        negative_emojis = ['👎', '😠', '😢', '💔', '❌']
-        thinking_emojis = ['🤔', '💭', '🧐']
+        positive_emojis = ["👍", "❤️", "🔥", "😊", "😂", "🎉", "✅", "💯"]
+        negative_emojis = ["👎", "😠", "😢", "💔", "❌"]
+        thinking_emojis = ["🤔", "💭", "🧐"]
 
         if emoji in positive_emojis:
-            emotion = 'positive'
+            emotion = "positive"
         elif emoji in negative_emojis:
-            emotion = 'negative'
+            emotion = "negative"
         elif emoji in thinking_emojis:
-            emotion = 'thoughtful'
+            emotion = "thoughtful"
         else:
-            emotion = 'neutral'
+            emotion = "neutral"
 
         if emotion in profile.reaction_patterns.emotional_responses:
             profile.reaction_patterns.emotional_responses[emotion] += 1
         else:
             profile.reaction_patterns.emotional_responses[emotion] = 1
 
-        logger.debug(f"Tracked reaction {emoji} for user {user_id} (total: {profile.reaction_patterns.total_reactions})")
+        logger.debug(
+            f"Tracked reaction {emoji} for user {user_id} (total: {profile.reaction_patterns.total_reactions})"
+        )
 
-    def record_roast(
-        self,
-        target_user_id: int,
-        roast_topic: str,
-        success: bool = True
-    ) -> None:
+    def record_roast(self, target_user_id: int, roast_topic: str, success: bool = True) -> None:
         """Record a roast attempt for tracking effectiveness.
 
         Args:

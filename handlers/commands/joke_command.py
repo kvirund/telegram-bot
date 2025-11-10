@@ -1,4 +1,5 @@
 """Joke command handler for the Telegram bot."""
+
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -20,11 +21,7 @@ class JokeCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(
-            name="joke",
-            description="Generate joke from context or about a topic",
-            admin_only=False
-        )
+        super().__init__(name="joke", description="Generate joke from context or about a topic", admin_only=False)
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /joke command.
@@ -55,7 +52,7 @@ class JokeCommand(Command):
                 provider_type=config.ai_provider,
                 api_key=config.api_key,
                 model=config.model_name,
-                base_url=config.base_url
+                base_url=config.base_url,
             )
 
             # Parse command and extract context if provided
@@ -70,10 +67,7 @@ class JokeCommand(Command):
             elif not is_private:
                 # In groups, use conversation history
                 logger.info(f"Generating joke with conversation context in chat {chat_id}")
-                conversation_context = message_history.get_context(
-                    chat_id=chat_id,
-                    count=config.context_messages_count
-                )
+                conversation_context = message_history.get_context(chat_id=chat_id, count=config.context_messages_count)
 
                 if conversation_context:
                     joke = await ai_provider.generate_joke(context=conversation_context, is_contextual=True)
@@ -93,7 +87,7 @@ class JokeCommand(Command):
             logger.error(f"Error handling /joke command: {e}")
             await message.reply_text(
                 "Извините, произошла ошибка при генерации анекдота. Попробуйте позже.",
-                reply_to_message_id=message.message_id
+                reply_to_message_id=message.message_id,
             )
 
 
@@ -105,10 +99,7 @@ async def send_joke_response(message, joke: str) -> None:
         joke: The joke text to send
     """
     try:
-        await message.reply_text(
-            joke,
-            reply_to_message_id=message.message_id
-        )
+        await message.reply_text(joke, reply_to_message_id=message.message_id)
         logger.info(f"Successfully sent joke to chat {message.chat_id}")
     except Exception as e:
         logger.error(f"Failed to send joke: {e}")

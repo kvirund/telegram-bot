@@ -1,4 +1,5 @@
 """Handle private chat conversations with context awareness."""
+
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -21,7 +22,7 @@ def is_mostly_cyrillic(text: str) -> bool:
     if not text:
         return False
 
-    cyrillic_count = sum(1 for char in text if '\u0400' <= char <= '\u04FF')
+    cyrillic_count = sum(1 for char in text if "\u0400" <= char <= "\u04ff")
     total_letters = sum(1 for char in text if char.isalpha())
 
     return total_letters > 0 and (cyrillic_count / total_letters) > 0.5
@@ -39,7 +40,7 @@ def is_mostly_english(text: str) -> bool:
     if not text:
         return False
 
-    latin_count = sum(1 for char in text if 'a' <= char.lower() <= 'z')
+    latin_count = sum(1 for char in text if "a" <= char.lower() <= "z")
     total_letters = sum(1 for char in text if char.isalpha())
 
     return total_letters > 0 and (latin_count / total_letters) > 0.5
@@ -62,8 +63,8 @@ def detect_conversation_language(context: str, current_message: str) -> str:
         return "russian"  # Default to Russian
 
     # Count Cyrillic and Latin characters
-    cyrillic_count = sum(1 for char in combined_text if '\u0400' <= char <= '\u04FF')
-    latin_count = sum(1 for char in combined_text if 'a' <= char.lower() <= 'z')
+    cyrillic_count = sum(1 for char in combined_text if "\u0400" <= char <= "\u04ff")
+    latin_count = sum(1 for char in combined_text if "a" <= char.lower() <= "z")
     total_letters = cyrillic_count + latin_count
 
     if total_letters == 0:
@@ -90,10 +91,7 @@ async def handle_private_conversation(update: Update, context: ContextTypes.DEFA
     """
     config = get_config()
     ai_provider = create_provider(
-        provider_type=config.ai_provider,
-        api_key=config.api_key,
-        model=config.model_name,
-        base_url=config.base_url
+        provider_type=config.ai_provider, api_key=config.api_key, model=config.model_name, base_url=config.base_url
     )
 
     if not update.message:
@@ -108,8 +106,7 @@ async def handle_private_conversation(update: Update, context: ContextTypes.DEFA
 
         # Get conversation context (last N messages)
         conversation_context = message_history.get_context(
-            chat_id=chat_id,
-            count=config.yaml_config.conversation_monitoring.context_window_size
+            chat_id=chat_id, count=config.yaml_config.conversation_monitoring.context_window_size
         )
 
         # Detect language from recent messages
@@ -117,7 +114,9 @@ async def handle_private_conversation(update: Update, context: ContextTypes.DEFA
 
         # Prepare language-specific instructions
         if detected_language == "russian":
-            language_instruction = "ВАЖНО: Отвечай ТОЛЬКО на русском языке, если только пользователь не использует другой язык явно."
+            language_instruction = (
+                "ВАЖНО: Отвечай ТОЛЬКО на русском языке, если только пользователь не использует другой язык явно."
+            )
         else:
             language_instruction = f"IMPORTANT: Respond in {detected_language} to match the user's language."
 
@@ -134,10 +133,7 @@ async def handle_private_conversation(update: Update, context: ContextTypes.DEFA
             # Build user message with context
             context_aware_message = f"Conversation history:\n{conversation_context}\n\nUser: {user_message}\n\nRespond naturally to the user's latest message:"
 
-            response = await ai_provider.free_request(
-                user_message=context_aware_message,
-                system_message=system_prompt
-            )
+            response = await ai_provider.free_request(user_message=context_aware_message, system_message=system_prompt)
         else:
             # No context yet, respond to first message
             # Check if first message is in Russian
@@ -148,28 +144,22 @@ async def handle_private_conversation(update: Update, context: ContextTypes.DEFA
                 if is_mostly_english(user_message):
                     language_instruction = "IMPORTANT: Respond in English."
                 else:
-                    language_instruction = "ВАЖНО: Отвечай на русском языке по умолчанию, но адаптируйся к языку пользователя."
+                    language_instruction = (
+                        "ВАЖНО: Отвечай на русском языке по умолчанию, но адаптируйся к языку пользователя."
+                    )
 
             system_prompt = (
-                "You are a helpful, witty, and engaging conversational AI assistant.\n\n"
-                f"{language_instruction}"
+                "You are a helpful, witty, and engaging conversational AI assistant.\n\n" f"{language_instruction}"
             )
 
-            response = await ai_provider.free_request(
-                user_message=user_message,
-                system_message=system_prompt
-            )
+            response = await ai_provider.free_request(user_message=user_message, system_message=system_prompt)
 
         # Send response
-        await message.reply_text(
-            response,
-            reply_to_message_id=message.message_id
-        )
+        await message.reply_text(response, reply_to_message_id=message.message_id)
         logger.info(f"Successfully sent conversational response to chat {chat_id}")
 
     except Exception as e:
         logger.error(f"Error in private conversation: {e}")
         await message.reply_text(
-            "Sorry, I encountered an error. Please try again.",
-            reply_to_message_id=message.message_id
+            "Sorry, I encountered an error. Please try again.", reply_to_message_id=message.message_id
         )

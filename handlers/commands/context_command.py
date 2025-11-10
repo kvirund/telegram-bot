@@ -1,4 +1,5 @@
 """Context command handler for clearing conversation context."""
+
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -20,11 +21,7 @@ class ContextCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(
-            name="context",
-            description="Clear chat context (admin only)",
-            admin_only=True
-        )
+        super().__init__(name="context", description="Clear chat context (admin only)", admin_only=True)
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /context command to reset/clear conversation context.
@@ -60,7 +57,7 @@ class ContextCommand(Command):
                 if user_id not in config.admin_user_ids:
                     await message.reply_text(
                         "❌ Only administrators can clear context for other chats.",
-                        reply_to_message_id=message.message_id
+                        reply_to_message_id=message.message_id,
                     )
                     return
 
@@ -68,8 +65,7 @@ class ContextCommand(Command):
                     target_chat_id = int(parts[1].strip())
                 except ValueError:
                     await message.reply_text(
-                        "❌ Invalid chat ID. Usage: /context <chat_id>",
-                        reply_to_message_id=message.message_id
+                        "❌ Invalid chat ID. Usage: /context <chat_id>", reply_to_message_id=message.message_id
                     )
                     return
             else:
@@ -94,15 +90,12 @@ class ContextCommand(Command):
                 f"📊 Removed {message_count} messages from history\n"
                 f"🔄 Autonomous commenter state reset",
                 reply_to_message_id=message.message_id,
-                parse_mode='Markdown'
+                parse_mode="Markdown",
             )
 
         except Exception as e:
             logger.error(f"Error in /context command: {e}")
-            await message.reply_text(
-                f"❌ Error: {str(e)}",
-                reply_to_message_id=message.message_id
-            )
+            await message.reply_text(f"❌ Error: {str(e)}", reply_to_message_id=message.message_id)
 
 
 # Create and register the command instance

@@ -1,4 +1,5 @@
 """Groq AI provider implementation."""
+
 import logging
 from typing import List, Dict
 from groq import Groq
@@ -36,27 +37,21 @@ class GroqProvider(AIProvider):
         system_message = {
             "role": "system",
             "content": "Ты профессиональный комик, который рассказывает смешные анекдоты на русском языке. "
-                      "Твои анекдоты должны быть остроумными, уместными и веселыми. "
-                      "Отвечай ТОЛЬКО анекдотом, без дополнительных комментариев или объяснений."
+            "Твои анекдоты должны быть остроумными, уместными и веселыми. "
+            "Отвечай ТОЛЬКО анекдотом, без дополнительных комментариев или объяснений.",
         }
 
         if is_contextual and context:
             user_message = {
                 "role": "user",
                 "content": f"Расскажи смешной анекдот на русском языке, связанный с этим контекстом:\n\n{context}\n\n"
-                          f"Анекдот должен быть уместным и относиться к теме разговора."
+                f"Анекдот должен быть уместным и относиться к теме разговора.",
             }
         elif context:
             # User provided explicit context in /joke command
-            user_message = {
-                "role": "user",
-                "content": f"Расскажи смешной анекдот на русском языке на тему: {context}"
-            }
+            user_message = {"role": "user", "content": f"Расскажи смешной анекдот на русском языке на тему: {context}"}
         else:
-            user_message = {
-                "role": "user",
-                "content": "Расскажи смешной анекдот на русском языке."
-            }
+            user_message = {"role": "user", "content": "Расскажи смешной анекдот на русском языке."}
 
         return [system_message, user_message]
 
@@ -83,7 +78,7 @@ class GroqProvider(AIProvider):
                 messages=messages,
                 temperature=0.9,  # Higher temperature for more creative jokes
                 max_tokens=500,
-                top_p=1.0
+                top_p=1.0,
             )
 
             joke = response.choices[0].message.content.strip()
@@ -112,24 +107,14 @@ class GroqProvider(AIProvider):
             messages = []
 
             if system_message:
-                messages.append({
-                    "role": "system",
-                    "content": system_message
-                })
+                messages.append({"role": "system", "content": system_message})
 
-            messages.append({
-                "role": "user",
-                "content": user_message
-            })
+            messages.append({"role": "user", "content": user_message})
 
             logger.info("Making free request to Groq")
 
             response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=0.7,
-                max_tokens=2000,
-                top_p=1.0
+                model=self.model, messages=messages, temperature=0.7, max_tokens=2000, top_p=1.0
             )
 
             result = response.choices[0].message.content.strip()
@@ -156,24 +141,14 @@ class GroqProvider(AIProvider):
         """
         try:
             messages = [
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant that responds in valid JSON format."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
+                {"role": "system", "content": "You are a helpful assistant that responds in valid JSON format."},
+                {"role": "user", "content": prompt},
             ]
 
             logger.info("Generating autonomous comment with Groq")
 
             response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=0.8,
-                max_tokens=1000,
-                top_p=1.0
+                model=self.model, messages=messages, temperature=0.8, max_tokens=1000, top_p=1.0
             )
 
             result = response.choices[0].message.content.strip()

@@ -1,4 +1,5 @@
 """Reaction management system for tracking and adding reactions."""
+
 import logging
 import random
 import time
@@ -75,28 +76,28 @@ class ReactionManager:
         reason = "random"
 
         # Simple heuristic-based selection
-        if any(word in text_lower for word in ['lol', 'haha', 'lmao', 'funny', 'joke', '😂', '🤣']):
+        if any(word in text_lower for word in ["lol", "haha", "lmao", "funny", "joke", "😂", "🤣"]):
             reaction = "😂"
             reason = "humor detected"
-        elif any(word in text_lower for word in ['wtf', 'wow', 'omg', '!', 'shocking']):
+        elif any(word in text_lower for word in ["wtf", "wow", "omg", "!", "shocking"]):
             reaction = "😱"
             reason = "surprise detected"
-        elif any(word in text_lower for word in ['good', 'great', 'awesome', 'perfect', 'nice', '👍']):
+        elif any(word in text_lower for word in ["good", "great", "awesome", "perfect", "nice", "👍"]):
             reaction = "👍"
             reason = "positive sentiment"
-        elif any(word in text_lower for word in ['fire', 'amazing', 'incredible', '🔥']):
+        elif any(word in text_lower for word in ["fire", "amazing", "incredible", "🔥"]):
             reaction = "🔥"
             reason = "enthusiasm detected"
-        elif any(word in text_lower for word in ['hmm', 'think', '?', 'question']):
+        elif any(word in text_lower for word in ["hmm", "think", "?", "question"]):
             reaction = "🤔"
             reason = "question/thinking"
-        elif any(word in text_lower for word in ['watch', 'see', 'look', '👀']):
+        elif any(word in text_lower for word in ["watch", "see", "look", "👀"]):
             reaction = "👀"
             reason = "attention keyword"
-        elif any(word in text_lower for word in ['100', 'exactly', 'agree', 'true']):
+        elif any(word in text_lower for word in ["100", "exactly", "agree", "true"]):
             reaction = "💯"
             reason = "agreement"
-        elif any(word in text_lower for word in ['right', 'correct', 'spot on', 'exactly']):
+        elif any(word in text_lower for word in ["right", "correct", "spot on", "exactly"]):
             reaction = "🎯"
             reason = "accuracy"
         else:
@@ -106,7 +107,7 @@ class ReactionManager:
 
         # Log without emoji and with safe encoding to avoid Windows cp1252 issues
         try:
-            safe_text = message_text[:50].encode('ascii', 'ignore').decode('ascii')
+            safe_text = message_text[:50].encode("ascii", "ignore").decode("ascii")
             logger.info(f"Selected reaction type: {reason} for message preview")
         except Exception:
             logger.info(f"Selected reaction type: {reason}")

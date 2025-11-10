@@ -1,4 +1,5 @@
 """Message handlers for the Telegram bot."""
+
 import logging
 import asyncio
 from telegram import Update
@@ -62,7 +63,7 @@ async def handle_message_reaction(update, context):
         # Process new reactions (reactions that were added)
         if reaction_update.new_reaction:
             for reaction in reaction_update.new_reaction:
-                if hasattr(reaction, 'emoji') and reaction.emoji:
+                if hasattr(reaction, "emoji") and reaction.emoji:
                     emoji = reaction.emoji
 
                     # Try to get the target message text for content analysis
@@ -70,8 +71,7 @@ async def handle_message_reaction(update, context):
                     try:
                         # Get the message that was reacted to
                         target_message = await context.bot.get_chat_message(
-                            chat_id=chat_id,
-                            message_id=reaction_update.message_id
+                            chat_id=chat_id, message_id=reaction_update.message_id
                         )
                         if target_message and target_message.text:
                             target_message_text = target_message.text
@@ -80,10 +80,7 @@ async def handle_message_reaction(update, context):
 
                     # Track the reaction in this specific chat
                     profile_manager.track_reaction_in_chat(
-                        chat_id=chat_id,
-                        user_id=user_id,
-                        emoji=emoji,
-                        target_message_text=target_message_text
+                        chat_id=chat_id, user_id=user_id, emoji=emoji, target_message_text=target_message_text
                     )
 
                     logger.debug(f"Tracked reaction {emoji} from user {user_id} in chat {chat_id}")
@@ -103,14 +100,12 @@ logger = logging.getLogger(__name__)
 config = get_config()
 reaction_manager = get_reaction_manager(config)
 ai_provider = create_provider(
-    provider_type=config.ai_provider,
-    api_key=config.api_key,
-    model=config.model_name,
-    base_url=config.base_url
+    provider_type=config.ai_provider, api_key=config.api_key, model=config.model_name, base_url=config.base_url
 )
 
 # Initialize autonomous commenter
 autonomous_commenter = AutonomousCommenter(config, profile_manager)
+
 
 # Auto-save profiles periodically
 async def auto_save_profiles():
@@ -156,40 +151,40 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     bot_user_id = context.bot.id
 
     # Update user profile (if profiling enabled and not bot's own message)
-    if (config.yaml_config.user_profiling.enabled and
-        message.from_user and
-        message.from_user.id != bot_user_id):
+    if config.yaml_config.user_profiling.enabled and message.from_user and message.from_user.id != bot_user_id:
         try:
             user_id = message.from_user.id
             username = message.from_user.username or message.from_user.first_name
 
             # Update basic profile info
             profile_manager.update_profile_from_message(message)
-            logger.info(f"[PROFILE] Updated for user {user_id} (@{username}) - "
-                       f"Message #{profile_manager.profiles[user_id].message_count}")
+            logger.info(
+                f"[PROFILE] Updated for user {user_id} (@{username}) - "
+                f"Message #{profile_manager.profiles[user_id].message_count}"
+            )
 
             # Check if AI enrichment should be triggered
             current_profile = profile_manager.profiles.get(user_id)
             if current_profile:
                 enrichment_interval = config.yaml_config.user_profiling.enrichment_interval_messages
                 if current_profile.message_count % enrichment_interval == 0:
-                    logger.info(f"[AI-ENRICH] Triggered for user {user_id} (@{username}) after "
-                               f"{current_profile.message_count} messages")
+                    logger.info(
+                        f"[AI-ENRICH] Triggered for user {user_id} (@{username}) after "
+                        f"{current_profile.message_count} messages"
+                    )
 
                     # Get recent messages FROM THIS USER ONLY for profile analysis
                     user_messages = message_history.get_user_messages(
                         chat_id=chat_id,
                         user_id=user_id,
-                        count=min(30, config.yaml_config.conversation_monitoring.context_window_size)
+                        count=min(30, config.yaml_config.conversation_monitoring.context_window_size),
                     )
 
                     if user_messages:
                         # Run AI enrichment asynchronously
                         try:
                             await profile_manager.enrich_profile_with_ai(
-                                user_id=user_id,
-                                recent_messages=user_messages,
-                                ai_analyzer=ai_provider
+                                user_id=user_id, recent_messages=user_messages, ai_analyzer=ai_provider
                             )
                             logger.info(f"[AI-ENRICH] Completed successfully for user {user_id}")
                         except Exception as e:
@@ -197,9 +192,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     else:
                         logger.warning(f"[AI-ENRICH] No messages available for user {user_id} in this chat")
                 else:
-                    messages_until_enrichment = enrichment_interval - (current_profile.message_count % enrichment_interval)
-                    logger.debug(f"[PROFILE] Update recorded for user {user_id}. "
-                               f"AI enrichment in {messages_until_enrichment} messages")
+                    messages_until_enrichment = enrichment_interval - (
+                        current_profile.message_count % enrichment_interval
+                    )
+                    logger.debug(
+                        f"[PROFILE] Update recorded for user {user_id}. "
+                        f"AI enrichment in {messages_until_enrichment} messages"
+                    )
 
                 # Save profile after update
                 profile_manager.save_profile(user_id)
@@ -214,22 +213,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         autonomous_commenter.add_message(chat_id, message)
 
     # Route to appropriate command handler using registry
-    if message.text.startswith('/'):
+    if message.text.startswith("/"):
         # Extract command name (remove leading slash and handle @username suffix)
         command_text = message.text.strip()
-        if ' ' in command_text:
+        if " " in command_text:
             command_part = command_text.split()[0][1:]  # Remove '/' and get first word
         else:
             command_part = command_text[1:]  # Remove leading '/'
 
         # Handle commands with @username suffix (e.g., /help@BotName)
-        if '@' in command_part:
-            command_name = command_part.split('@')[0]
+        if "@" in command_part:
+            command_name = command_part.split("@")[0]
         else:
             command_name = command_part
 
         # Import registry and find command
         from .commands import command_registry
+
         command = command_registry.get_command(command_name)
 
         if command:
@@ -240,15 +240,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 return
             else:
                 await message.reply_text(
-                    "❌ You don't have permission to use this command.",
-                    reply_to_message_id=message.message_id
+                    "❌ You don't have permission to use this command.", reply_to_message_id=message.message_id
                 )
                 return
         else:
             # Unknown command
             await message.reply_text(
                 f"❌ Unknown command: /{command_name}\n\nUse /help to see available commands.",
-                reply_to_message_id=message.message_id
+                reply_to_message_id=message.message_id,
             )
             return
 
@@ -263,14 +262,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return
 
     # Check for autonomous commenting opportunity (not in response to commands/mentions)
-    if (not is_private and
-        config.yaml_config.autonomous_commenting.enabled and
-        not message.text.startswith('/')):
+    if not is_private and config.yaml_config.autonomous_commenting.enabled and not message.text.startswith("/"):
         await check_and_make_autonomous_comment(update, context)
 
     # Check for autonomous reaction opportunity (group chats only)
-    if (not is_private and
-        message.from_user and
-        message.from_user.id != bot_user_id and
-        not message.text.startswith('/')):
+    if (
+        not is_private
+        and message.from_user
+        and message.from_user.id != bot_user_id
+        and not message.text.startswith("/")
+    ):
         await check_and_add_reaction(update, context)

@@ -1,4 +1,5 @@
 """Service for regenerating user profiles from context history."""
+
 import logging
 from config import get_config
 from utils.profile_manager import profile_manager
@@ -33,7 +34,7 @@ class ProfileRegenerationService:
                 provider_type=self.config.ai_provider,
                 api_key=self.config.api_key,
                 model=self.config.model_name,
-                base_url=self.config.base_url
+                base_url=self.config.base_url,
             )
             logger.info("AI provider initialized")
 
@@ -54,18 +55,18 @@ class ProfileRegenerationService:
                 messages = messages[-100:]
 
                 for msg_data in messages:
-                    msg_user_id = msg_data.get('user_id', 0)
-                    text = msg_data.get('text', '')
+                    msg_user_id = msg_data.get("user_id", 0)
+                    text = msg_data.get("text", "")
 
-                    if msg_user_id == 0 or not text or text.startswith('/'):
+                    if msg_user_id == 0 or not text or text.startswith("/"):
                         continue
 
                     # Store user info from the first message we see for each user
                     if msg_user_id not in user_info:
                         user_info[msg_user_id] = {
-                            'username': msg_data.get('username', ''),
-                            'first_name': msg_data.get('first_name', ''),
-                            'last_name': msg_data.get('last_name', '')
+                            "username": msg_data.get("username", ""),
+                            "first_name": msg_data.get("first_name", ""),
+                            "last_name": msg_data.get("last_name", ""),
                         }
 
                     if msg_user_id not in user_data:
@@ -74,13 +75,7 @@ class ProfileRegenerationService:
 
             if not user_data:
                 logger.warning("No user messages found in context history")
-                return {
-                    'processed': 0,
-                    'skipped': 0,
-                    'failed': 0,
-                    'total': 0,
-                    'message': 'No user messages found'
-                }
+                return {"processed": 0, "skipped": 0, "failed": 0, "total": 0, "message": "No user messages found"}
 
             logger.info(f"Found {len(user_data)} users to process")
 
@@ -100,21 +95,19 @@ class ProfileRegenerationService:
                 # Update profile with user info from context history
                 if user_id in user_info:
                     info = user_info[user_id]
-                    profile.username = info['username'] or profile.username
-                    profile.first_name = info['first_name'] or profile.first_name
-                    profile.last_name = info['last_name'] or profile.last_name
+                    profile.username = info["username"] or profile.username
+                    profile.first_name = info["first_name"] or profile.first_name
+                    profile.last_name = info["last_name"] or profile.last_name
 
                 messages_text = "\n".join(messages[:30])
 
                 # Sanitize name for logging to avoid Unicode encoding issues
-                safe_name = (profile.first_name or 'Unknown').encode('ascii', 'ignore').decode('ascii') or 'Unknown'
+                safe_name = (profile.first_name or "Unknown").encode("ascii", "ignore").decode("ascii") or "Unknown"
                 logger.info(f"Processing user {user_id} ({safe_name}) - {len(messages)} messages")
 
                 try:
                     await profile_manager.enrich_profile_with_ai(
-                        user_id=user_id,
-                        recent_messages=messages_text,
-                        ai_analyzer=ai_provider
+                        user_id=user_id, recent_messages=messages_text, ai_analyzer=ai_provider
                     )
                     profile_manager.save_profile(user_id)
                     processed += 1
@@ -124,12 +117,7 @@ class ProfileRegenerationService:
                     logger.error(f"[FAIL] Failed to regenerate profile for user {user_id}: {e}")
                     failed += 1
 
-            result = {
-                'processed': processed,
-                'skipped': skipped,
-                'failed': failed,
-                'total': len(user_data)
-            }
+            result = {"processed": processed, "skipped": skipped, "failed": failed, "total": len(user_data)}
 
             logger.info("=" * 60)
             logger.info("PROFILE REGENERATION COMPLETE")

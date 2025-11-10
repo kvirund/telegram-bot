@@ -1,4 +1,5 @@
 """Main Telegram bot application."""
+
 import sys
 import signal
 import logging
@@ -15,15 +16,12 @@ def setup_logging():
     import os
 
     # Create logs directory if it doesn't exist
-    os.makedirs('logs', exist_ok=True)
+    os.makedirs("logs", exist_ok=True)
 
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler('logs/bot.log'),
-            logging.StreamHandler(sys.stdout)
-        ]
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[logging.FileHandler("logs/bot.log"), logging.StreamHandler(sys.stdout)],
     )
 
 
@@ -75,11 +73,11 @@ def main():
     global bot_service
 
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description='Telegram AI Assistant')
+    parser = argparse.ArgumentParser(description="Telegram AI Assistant")
     parser.add_argument(
-        '--regenerate-profiles',
-        action='store_true',
-        help='Regenerate all user profiles from context history using AI enrichment'
+        "--regenerate-profiles",
+        action="store_true",
+        help="Regenerate all user profiles from context history using AI enrichment",
     )
     args = parser.parse_args()
 
@@ -132,5 +130,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

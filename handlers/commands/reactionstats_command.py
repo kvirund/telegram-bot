@@ -1,4 +1,5 @@
 """Reaction statistics command handler."""
+
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -17,11 +18,7 @@ class ReactionStatsCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(
-            name="reactionstats",
-            description="Show user's reaction patterns",
-            admin_only=False
-        )
+        super().__init__(name="reactionstats", description="Show user's reaction patterns", admin_only=False)
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /reactionstats command to show user's reaction patterns.
@@ -41,7 +38,7 @@ class ReactionStatsCommand(Command):
 
         if args:
             # Try to find user by username in the current chat
-            username = args[0].lstrip('@')
+            username = args[0].lstrip("@")
 
             try:
                 # Get chat member to resolve username to user ID
@@ -76,44 +73,39 @@ class ReactionStatsCommand(Command):
             stats_message += f"📈 Reaction Rate: {stats['reaction_rate']} per message\n\n"
 
             # Favorite reactions
-            if stats['favorite_reactions']:
+            if stats["favorite_reactions"]:
                 stats_message += f"❤️ Favorite Reactions:\n"
-                for emoji, count in stats['favorite_reactions'][:3]:  # Top 3
-                    percentage = (count / stats['total_reactions']) * 100 if stats['total_reactions'] > 0 else 0
+                for emoji, count in stats["favorite_reactions"][:3]:  # Top 3
+                    percentage = (count / stats["total_reactions"]) * 100 if stats["total_reactions"] > 0 else 0
                     stats_message += f"  {emoji} {count} times ({percentage:.1f}%)\n"
                 stats_message += "\n"
             else:
                 stats_message += "❤️ Favorite Reactions: None yet\n\n"
 
             # Emotional distribution
-            if stats['emotional_distribution']:
+            if stats["emotional_distribution"]:
                 stats_message += f"😊 Emotional Distribution:\n"
-                for emotion, percentage in stats['emotional_distribution'].items():
-                    emoji_map = {
-                        'positive': '😀',
-                        'negative': '😞',
-                        'neutral': '😐',
-                        'thoughtful': '🤔'
-                    }
-                    emoji = emoji_map.get(emotion, '❓')
+                for emotion, percentage in stats["emotional_distribution"].items():
+                    emoji_map = {"positive": "😀", "negative": "😞", "neutral": "😐", "thoughtful": "🤔"}
+                    emoji = emoji_map.get(emotion, "❓")
                     stats_message += f"  {emoji} {emotion.title()}: {percentage}%\n"
                 stats_message += "\n"
             else:
                 stats_message += "😊 Emotional Distribution: No data yet\n\n"
 
             # Reaction targets
-            if stats['reaction_targets']:
+            if stats["reaction_targets"]:
                 stats_message += f"🎯 Content Types Reacted To:\n"
-                for target, percentage in stats['reaction_targets'].items():
+                for target, percentage in stats["reaction_targets"].items():
                     stats_message += f"  • {target.title()}: {percentage}%\n"
                 stats_message += "\n"
             else:
                 stats_message += "🎯 Content Types Reacted To: No data yet\n\n"
 
             # Personality insights
-            if stats['personality_insights']:
+            if stats["personality_insights"]:
                 stats_message += f"🔍 Personality Insights:\n"
-                for insight in stats['personality_insights'][:3]:  # Top 3 insights
+                for insight in stats["personality_insights"][:3]:  # Top 3 insights
                     stats_message += f"  • {insight}\n"
             else:
                 stats_message += "🔍 Personality Insights: Still analyzing...\n"

@@ -1,4 +1,5 @@
 """Integration tests for command handlers and message processing pipeline."""
+
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 from telegram import Update, Message, Chat, User
@@ -25,9 +26,9 @@ class TestCommandHandlersIntegration:
         mock_telegram_update.message.chat.type = "private"
 
         # Mock AI provider factory and response function
-        with patch('handlers.commands.joke_command.create_provider', return_value=mock_ai_provider), \
-             patch('handlers.commands.joke_command.send_joke_response') as mock_send, \
-             patch('handlers.commands.joke_command.get_config') as mock_config:
+        with patch("handlers.commands.joke_command.create_provider", return_value=mock_ai_provider), patch(
+            "handlers.commands.joke_command.send_joke_response"
+        ) as mock_send, patch("handlers.commands.joke_command.get_config") as mock_config:
 
             # Mock config
             config_mock = MagicMock()
@@ -53,9 +54,9 @@ class TestCommandHandlersIntegration:
         mock_telegram_update.message.chat.type = "private"
 
         # Mock AI provider factory
-        with patch('handlers.commands.joke_command.create_provider', return_value=mock_ai_provider), \
-             patch('handlers.commands.joke_command.send_joke_response') as mock_send, \
-             patch('handlers.commands.joke_command.get_config') as mock_config:
+        with patch("handlers.commands.joke_command.create_provider", return_value=mock_ai_provider), patch(
+            "handlers.commands.joke_command.send_joke_response"
+        ) as mock_send, patch("handlers.commands.joke_command.get_config") as mock_config:
 
             # Mock config
             config_mock = MagicMock()
@@ -80,9 +81,9 @@ class TestCommandHandlersIntegration:
         mock_telegram_update.message.text = "/ask What is Python?"
 
         # Mock AI provider factory
-        with patch('handlers.commands.ask_command.create_provider', return_value=mock_ai_provider), \
-             patch('handlers.commands.ask_command.get_config') as mock_config, \
-             patch.object(mock_telegram_update.message, 'reply_text') as mock_reply:
+        with patch("handlers.commands.ask_command.create_provider", return_value=mock_ai_provider), patch(
+            "handlers.commands.ask_command.get_config"
+        ) as mock_config, patch.object(mock_telegram_update.message, "reply_text") as mock_reply:
 
             # Mock config
             config_mock = MagicMock()
@@ -102,7 +103,7 @@ class TestCommandHandlersIntegration:
     @pytest.mark.asyncio
     async def test_help_command_integration(self, mock_telegram_update, mock_context):
         """Test /help command integration."""
-        with patch.object(mock_telegram_update.message, 'reply_text') as mock_reply:
+        with patch.object(mock_telegram_update.message, "reply_text") as mock_reply:
             # Execute
             await handle_help_command(mock_telegram_update, mock_context)
 
@@ -125,8 +126,9 @@ class TestMessageProcessingPipeline:
         mock_telegram_update.message.chat.type = "private"
 
         # Mock dependencies - the message handler calls the command handler directly
-        with patch('handlers.message_handler.handle_joke_command') as mock_joke_handler, \
-             patch('handlers.message_handler.get_config') as mock_config:
+        with patch("handlers.message_handler.handle_joke_command") as mock_joke_handler, patch(
+            "handlers.message_handler.get_config"
+        ) as mock_config:
 
             # Mock config
             config_mock = MagicMock()
@@ -146,8 +148,9 @@ class TestMessageProcessingPipeline:
         mock_telegram_update.message.text = "/ask What is AI?"
 
         # Mock dependencies
-        with patch('handlers.message_handler.handle_ask_command') as mock_ask_handler, \
-             patch('handlers.message_handler.get_config') as mock_config:
+        with patch("handlers.message_handler.handle_ask_command") as mock_ask_handler, patch(
+            "handlers.message_handler.get_config"
+        ) as mock_config:
 
             # Mock config
             config_mock = MagicMock()
@@ -167,8 +170,9 @@ class TestMessageProcessingPipeline:
         mock_telegram_update.message.text = "/help"
 
         # Mock dependencies
-        with patch('handlers.message_handler.handle_help_command') as mock_help_handler, \
-             patch('handlers.message_handler.get_config') as mock_config:
+        with patch("handlers.message_handler.handle_help_command") as mock_help_handler, patch(
+            "handlers.message_handler.get_config"
+        ) as mock_config:
 
             # Mock config
             config_mock = MagicMock()
@@ -189,8 +193,9 @@ class TestMessageProcessingPipeline:
         mock_telegram_update.message.chat.type = "group"
 
         # Mock dependencies
-        with patch('handlers.message_handler.get_config') as mock_config, \
-             patch('handlers.message_handler.check_and_make_autonomous_comment') as mock_auto_handler:
+        with patch("handlers.message_handler.get_config") as mock_config, patch(
+            "handlers.message_handler.check_and_make_autonomous_comment"
+        ) as mock_auto_handler:
 
             # Mock config
             config_mock = MagicMock()
@@ -217,9 +222,9 @@ class TestErrorHandlingIntegration:
         mock_ai_provider.generate_joke.side_effect = Exception("API Error")
 
         # Mock dependencies
-        with patch('handlers.commands.joke_command.create_provider', return_value=mock_ai_provider), \
-             patch('handlers.commands.joke_command.get_config') as mock_config, \
-             patch.object(mock_telegram_update.message, 'reply_text') as mock_reply:
+        with patch("handlers.commands.joke_command.create_provider", return_value=mock_ai_provider), patch(
+            "handlers.commands.joke_command.get_config"
+        ) as mock_config, patch.object(mock_telegram_update.message, "reply_text") as mock_reply:
 
             # Mock config
             config_mock = MagicMock()
@@ -246,9 +251,9 @@ class TestErrorHandlingIntegration:
         mock_ai_provider.free_request.side_effect = Exception("API Error")
 
         # Mock dependencies
-        with patch('handlers.commands.ask_command.create_provider', return_value=mock_ai_provider), \
-             patch('handlers.commands.ask_command.get_config') as mock_config, \
-             patch.object(mock_telegram_update.message, 'reply_text') as mock_reply:
+        with patch("handlers.commands.ask_command.create_provider", return_value=mock_ai_provider), patch(
+            "handlers.commands.ask_command.get_config"
+        ) as mock_config, patch.object(mock_telegram_update.message, "reply_text") as mock_reply:
 
             # Mock config
             config_mock = MagicMock()

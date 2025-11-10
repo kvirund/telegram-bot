@@ -1,4 +1,5 @@
 """Handle autonomous commenting and reactions."""
+
 import logging
 from telegram import Update, ReactionTypeEmoji
 from telegram.ext import ContextTypes
@@ -20,10 +21,7 @@ async def check_and_make_autonomous_comment(update: Update, context: ContextType
     """
     config = get_config()
     ai_provider = create_provider(
-        provider_type=config.ai_provider,
-        api_key=config.api_key,
-        model=config.model_name,
-        base_url=config.base_url
+        provider_type=config.ai_provider, api_key=config.api_key, model=config.model_name, base_url=config.base_url
     )
     autonomous_commenter = AutonomousCommenter(config, profile_manager)
 
@@ -49,9 +47,7 @@ async def check_and_make_autonomous_comment(update: Update, context: ContextType
 
         # Generate comment
         comment = await autonomous_commenter.generate_comment(
-            chat_id=chat_id,
-            ai_provider=ai_provider,
-            bot_user_id=bot_user_id
+            chat_id=chat_id, ai_provider=ai_provider, bot_user_id=bot_user_id
         )
 
         if not comment:
@@ -61,16 +57,11 @@ async def check_and_make_autonomous_comment(update: Update, context: ContextType
         # Send comment (reply or standalone)
         if comment.reply_to_message_id:
             await context.bot.send_message(
-                chat_id=chat_id,
-                text=comment.text,
-                reply_to_message_id=comment.reply_to_message_id
+                chat_id=chat_id, text=comment.text, reply_to_message_id=comment.reply_to_message_id
             )
             logger.info(f"Sent autonomous reply to message {comment.reply_to_message_id} in chat {chat_id}")
         else:
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text=comment.text
-            )
+            await context.bot.send_message(chat_id=chat_id, text=comment.text)
             logger.info(f"Sent autonomous standalone comment in chat {chat_id}")
 
         # Mark that we commented
@@ -79,9 +70,7 @@ async def check_and_make_autonomous_comment(update: Update, context: ContextType
         # Record roast if applicable
         if comment.target_user_id and comment.comment_type == "roast":
             profile_manager.record_roast(
-                target_user_id=comment.target_user_id,
-                roast_topic=comment.comment_type,
-                success=True
+                target_user_id=comment.target_user_id, roast_topic=comment.comment_type, success=True
             )
 
     except Exception as e:
@@ -115,16 +104,16 @@ async def check_and_add_reaction(update: Update, context: ContextTypes.DEFAULT_T
         reaction = reaction_manager.choose_reaction(message.text)
 
         # Check if set_message_reaction is available (requires python-telegram-bot >= 20.0)
-        if not hasattr(context.bot, 'set_message_reaction'):
-            logger.warning("Reaction API not available in your python-telegram-bot version. "
-                         "Please upgrade to >= 20.0 for reaction support.")
+        if not hasattr(context.bot, "set_message_reaction"):
+            logger.warning(
+                "Reaction API not available in your python-telegram-bot version. "
+                "Please upgrade to >= 20.0 for reaction support."
+            )
             return
 
         # Add reaction to message using ReactionTypeEmoji
         await context.bot.set_message_reaction(
-            chat_id=chat_id,
-            message_id=message.message_id,
-            reaction=[ReactionTypeEmoji(emoji=reaction)]
+            chat_id=chat_id, message_id=message.message_id, reaction=[ReactionTypeEmoji(emoji=reaction)]
         )
 
         # Mark that we reacted

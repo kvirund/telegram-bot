@@ -1,4 +1,5 @@
 """Handle /profile command to show user profile."""
+
 import logging
 import json
 import os
@@ -24,11 +25,7 @@ class ProfileCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(
-            name="profile",
-            description="Show user profile (admin only)",
-            admin_only=True
-        )
+        super().__init__(name="profile", description="Show user profile (admin only)", admin_only=True)
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /profile command to show user profile.
@@ -58,8 +55,7 @@ class ProfileCommand(Command):
         # Check admin privilege
         if user_id not in config.admin_user_ids:
             await message.reply_text(
-                "❌ Only administrators can view user profiles.",
-                reply_to_message_id=message.message_id
+                "❌ Only administrators can view user profiles.", reply_to_message_id=message.message_id
             )
             return
 
@@ -75,7 +71,7 @@ class ProfileCommand(Command):
                     "• /profile @username\n"
                     "• /profile 123456789\n"
                     "• /profile John",
-                    reply_to_message_id=message.message_id
+                    reply_to_message_id=message.message_id,
                 )
                 return
 
@@ -94,21 +90,24 @@ class ProfileCommand(Command):
 
             # Method 2: Try as username (with or without @)
             if not profile:
-                username_search = search_term.lstrip('@')
+                username_search = search_term.lstrip("@")
                 # Search all profiles for matching username
                 profiles_dir = os.path.join(
                     os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
                     config.yaml_config.user_profiling.profile_directory,
-                    "users"
+                    "users",
                 )
                 if os.path.exists(profiles_dir):
                     for filename in os.listdir(profiles_dir):
-                        if filename.endswith('.json'):
+                        if filename.endswith(".json"):
                             try:
-                                file_user_id = int(filename.replace('user_', '').replace('.json', ''))
+                                file_user_id = int(filename.replace("user_", "").replace(".json", ""))
                                 temp_profile = profile_manager.load_profile(file_user_id)
-                                if (temp_profile and temp_profile.username and
-                                    temp_profile.username.lower() == username_search.lower()):
+                                if (
+                                    temp_profile
+                                    and temp_profile.username
+                                    and temp_profile.username.lower() == username_search.lower()
+                                ):
                                     profile = temp_profile
                                     search_method = f"Username: @{username_search}"
                                     break
@@ -119,12 +118,15 @@ class ProfileCommand(Command):
             if not profile:
                 if os.path.exists(profiles_dir):
                     for filename in os.listdir(profiles_dir):
-                        if filename.endswith('.json'):
+                        if filename.endswith(".json"):
                             try:
-                                file_user_id = int(filename.replace('user_', '').replace('.json', ''))
+                                file_user_id = int(filename.replace("user_", "").replace(".json", ""))
                                 temp_profile = profile_manager.load_profile(file_user_id)
-                                if (temp_profile and temp_profile.first_name and
-                                    temp_profile.first_name.lower() == search_term.lower()):
+                                if (
+                                    temp_profile
+                                    and temp_profile.first_name
+                                    and temp_profile.first_name.lower() == search_term.lower()
+                                ):
                                     profile = temp_profile
                                     search_method = f"Name: {search_term}"
                                     break
@@ -133,22 +135,17 @@ class ProfileCommand(Command):
 
             if not profile or profile.user_id == 0:
                 await message.reply_text(
-                    f"❌ No profile found for: {search_term}",
-                    reply_to_message_id=message.message_id
+                    f"❌ No profile found for: {search_term}", reply_to_message_id=message.message_id
                 )
                 return
 
             # Use AI to generate comprehensive, human-readable profile
-            language = profile.language_preference or 'ru'
+            language = profile.language_preference or "ru"
 
             try:
                 profile_summary = await _generate_ai_profile_summary(profile, language, config)
 
-                await message.reply_text(
-                    profile_summary,
-                    reply_to_message_id=message.message_id,
-                    parse_mode='HTML'
-                )
+                await message.reply_text(profile_summary, reply_to_message_id=message.message_id, parse_mode="HTML")
             except Exception as e:
                 logger.error(f"Error generating AI profile summary: {e}")
                 # Fallback to basic display
@@ -156,19 +153,12 @@ class ProfileCommand(Command):
                 profile_text += f"🆔 ID: `{profile.user_id}`\n"
                 profile_text += f"📊 Messages: {profile.message_count}\n"
 
-                await message.reply_text(
-                    profile_text,
-                    reply_to_message_id=message.message_id,
-                    parse_mode='Markdown'
-                )
+                await message.reply_text(profile_text, reply_to_message_id=message.message_id, parse_mode="Markdown")
             logger.info(f"Profile displayed for user {profile.user_id} by admin {user_id}")
 
         except Exception as e:
             logger.error(f"Error in /profile command: {e}")
-            await message.reply_text(
-                f"❌ Error: {str(e)}",
-                reply_to_message_id=message.message_id
-            )
+            await message.reply_text(f"❌ Error: {str(e)}", reply_to_message_id=message.message_id)
 
 
 # Create and register the command instance
@@ -199,27 +189,24 @@ async def _generate_ai_profile_summary(profile, language: str, config) -> str:
             "username": profile.username,
             "first_name": profile.first_name,
             "message_count": profile.message_count,
-            "language": profile.language_preference
+            "language": profile.language_preference,
         },
         "interests": profile.interests,
         "speaking_style": {
             "tone": profile.speaking_style.tone,
             "vocabulary": profile.speaking_style.vocabulary_level,
-            "emoji_usage": profile.speaking_style.emoji_usage
+            "emoji_usage": profile.speaking_style.emoji_usage,
         },
         "humor_type": profile.humor_type,
-        "weaknesses": {
-            "technical": profile.weaknesses.technical,
-            "personal": profile.weaknesses.personal
-        },
+        "weaknesses": {"technical": profile.weaknesses.technical, "personal": profile.weaknesses.personal},
         "patterns": {
             "common_mistakes": profile.patterns.common_mistakes,
-            "embarrassing_moments": profile.embarrassing_moments
-        }
+            "embarrassing_moments": profile.embarrassing_moments,
+        },
     }
 
     # Build AI prompt
-    if language == 'ru':
+    if language == "ru":
         prompt = f"""Создай подробное, читаемое описание профиля пользователя на основе этих данных:
 
 {json.dumps(profile_data, ensure_ascii=False, indent=2)}
@@ -260,25 +247,42 @@ Start with "<b>👤 {profile.first_name}</b>" and use <b> to highlight important
 
     try:
         ai_provider = create_provider(
-            provider_type=config.ai_provider,
-            api_key=config.api_key,
-            model=config.model_name,
-            base_url=config.base_url
+            provider_type=config.ai_provider, api_key=config.api_key, model=config.model_name, base_url=config.base_url
         )
         summary = await ai_provider.free_request(
-            user_message=prompt,
-            system_message="You are a skilled profiler. Create comprehensive, engaging profiles."
+            user_message=prompt, system_message="You are a skilled profiler. Create comprehensive, engaging profiles."
         )
 
         # Sanitize the response to remove unsupported HTML tags
         import re
+
         # Remove unsupported HTML tags but keep supported ones
         # Supported: <b>, <i>, <u>, <s>, <code>, <pre>, <a>
         # Remove: <h1>, <h2>, <h3>, <p>, <div>, <span>, <br>, <strong>, <em>, etc.
-        unsupported_tags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th']
+        unsupported_tags = [
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "p",
+            "div",
+            "span",
+            "br",
+            "strong",
+            "em",
+            "ul",
+            "ol",
+            "li",
+            "table",
+            "tr",
+            "td",
+            "th",
+        ]
         for tag in unsupported_tags:
             # Remove opening and closing tags
-            summary = re.sub(rf'</?{tag}[^>]*>', '', summary, flags=re.IGNORECASE)
+            summary = re.sub(rf"</?{tag}[^>]*>", "", summary, flags=re.IGNORECASE)
 
         return summary
     except Exception as e:

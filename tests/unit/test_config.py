@@ -1,4 +1,5 @@
 """Unit tests for configuration management."""
+
 import pytest
 import tempfile
 import os
@@ -20,7 +21,7 @@ class TestBotConfig:
             api_key=mock_config.api_key,
             model_name=mock_config.model_name,
             context_messages_count=mock_config.context_messages_count,
-            admin_user_ids=mock_config.admin_user_ids
+            admin_user_ids=mock_config.admin_user_ids,
         )
 
         assert config.telegram_token == mock_config.telegram_token
@@ -39,7 +40,7 @@ class TestBotConfig:
                 bot_username="@testbot",
                 ai_provider="local",
                 api_key="test_key",
-                model_name="test_model"
+                model_name="test_model",
             )
 
     def test_config_validation_missing_username(self):
@@ -50,7 +51,7 @@ class TestBotConfig:
                 bot_username="",
                 ai_provider="local",
                 api_key="test_key",
-                model_name="test_model"
+                model_name="test_model",
             )
 
     def test_config_validation_invalid_provider(self):
@@ -61,7 +62,7 @@ class TestBotConfig:
                 bot_username="@testbot",
                 ai_provider="invalid_provider",
                 api_key="test_key",
-                model_name="test_model"
+                model_name="test_model",
             )
 
     def test_config_validation_missing_api_key(self):
@@ -72,7 +73,7 @@ class TestBotConfig:
                 bot_username="@testbot",
                 ai_provider="local",
                 api_key="",
-                model_name="test_model"
+                model_name="test_model",
             )
 
     def test_config_validation_missing_model(self):
@@ -83,7 +84,7 @@ class TestBotConfig:
                 bot_username="@testbot",
                 ai_provider="local",
                 api_key="test_key",
-                model_name=""
+                model_name="",
             )
 
     def test_config_validation_invalid_context_count(self):
@@ -95,7 +96,7 @@ class TestBotConfig:
                 ai_provider="local",
                 api_key="test_key",
                 model_name="test_model",
-                context_messages_count=0
+                context_messages_count=0,
             )
 
     def test_config_validation_invalid_retries(self):
@@ -107,7 +108,7 @@ class TestBotConfig:
                 ai_provider="local",
                 api_key="test_key",
                 model_name="test_model",
-                max_retries=0
+                max_retries=0,
             )
 
 
@@ -116,7 +117,7 @@ class TestYamlConfigLoading:
 
     def test_load_yaml_config_missing_file(self):
         """Test loading config when file doesn't exist."""
-        with patch('config.os.path.join', return_value='/nonexistent/config.yaml'):
+        with patch("config.os.path.join", return_value="/nonexistent/config.yaml"):
             yaml_config = load_yaml_config()
             # Should return default config when file doesn't exist
             assert yaml_config.bot.telegram_token == ""
@@ -165,7 +166,7 @@ system_prompts:
         config_path = temp_dir / "config.yaml"
         config_path.write_text(config_content)
 
-        with patch('config.os.path.dirname', return_value=str(temp_dir)):
+        with patch("config.os.path.dirname", return_value=str(temp_dir)):
             yaml_config = load_yaml_config()
 
             assert yaml_config.bot.telegram_token == "test_token_123"
@@ -181,13 +182,14 @@ system_prompts:
 class TestConfigSingleton:
     """Test configuration singleton behavior."""
 
-    @patch('config.load_config')
+    @patch("config.load_config")
     def test_get_config_singleton(self, mock_load_config, mock_config):
         """Test that get_config returns singleton instance."""
         from config import _config
 
         # Reset singleton
         import config
+
         config._config = None
 
         # Mock the load_config to return our mock config
@@ -205,13 +207,14 @@ class TestConfigSingleton:
         assert mock_load_config.call_count == 1  # Should not be called again
         assert config1 is config2
 
-    @patch('config.load_config')
+    @patch("config.load_config")
     def test_reload_config(self, mock_load_config, mock_config):
         """Test that reload_config forces reload."""
         from config import _config
 
         # Reset singleton
         import config
+
         config._config = None
 
         # Mock the load_config to return different objects each time

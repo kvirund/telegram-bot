@@ -1,4 +1,5 @@
 """Unit tests for AI provider abstractions."""
+
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 from ai_providers import create_provider, GroqProvider, OpenRouterProvider, LocalProvider
@@ -9,7 +10,7 @@ class TestCreateProvider:
 
     def test_create_groq_provider(self):
         """Test creating a Groq provider."""
-        with patch('ai_providers.groq_provider.Groq'):
+        with patch("ai_providers.groq_provider.Groq"):
             provider = create_provider("groq", "test_key", "test_model")
             assert isinstance(provider, GroqProvider)
             assert provider.api_key == "test_key"
@@ -17,7 +18,7 @@ class TestCreateProvider:
 
     def test_create_openrouter_provider(self):
         """Test creating an OpenRouter provider."""
-        with patch('ai_providers.openrouter_provider.AsyncOpenAI'):
+        with patch("ai_providers.openrouter_provider.AsyncOpenAI"):
             provider = create_provider("openrouter", "test_key", "test_model")
             assert isinstance(provider, OpenRouterProvider)
             assert provider.api_key == "test_key"
@@ -25,7 +26,7 @@ class TestCreateProvider:
 
     def test_create_local_provider(self):
         """Test creating a Local provider."""
-        with patch('ai_providers.local_provider.OpenAI'):
+        with patch("ai_providers.local_provider.OpenAI"):
             provider = create_provider("local", "test_key", "test_model", "http://localhost:8000")
             assert isinstance(provider, LocalProvider)
             assert provider.api_key == "test_key"
@@ -34,13 +35,13 @@ class TestCreateProvider:
 
     def test_create_local_provider_default_url(self):
         """Test creating a Local provider with default URL."""
-        with patch('ai_providers.local_provider.OpenAI'):
+        with patch("ai_providers.local_provider.OpenAI"):
             provider = create_provider("local", "test_key", "test_model")
             assert provider.base_url == "http://localhost:8000/v1"
 
     def test_create_provider_case_insensitive(self):
         """Test that provider type is case insensitive."""
-        with patch('ai_providers.groq_provider.Groq'):
+        with patch("ai_providers.groq_provider.Groq"):
             provider = create_provider("GROQ", "test_key", "test_model")
             assert isinstance(provider, GroqProvider)
 
@@ -56,7 +57,7 @@ class TestGroqProvider:
     @pytest.fixture
     def provider(self):
         """Create a GroqProvider instance with mocked client."""
-        with patch('ai_providers.groq_provider.Groq') as mock_groq:
+        with patch("ai_providers.groq_provider.Groq") as mock_groq:
             provider = GroqProvider("test_key", "test_model")
             return provider
 
@@ -158,7 +159,7 @@ class TestOpenRouterProvider:
     @pytest.fixture
     def provider(self):
         """Create an OpenRouterProvider instance with mocked client."""
-        with patch('ai_providers.openrouter_provider.AsyncOpenAI') as mock_openai:
+        with patch("ai_providers.openrouter_provider.AsyncOpenAI") as mock_openai:
             provider = OpenRouterProvider("test_key", "test_model")
             return provider
 
@@ -187,7 +188,7 @@ class TestLocalProvider:
     @pytest.fixture
     def provider(self):
         """Create a LocalProvider instance with mocked client."""
-        with patch('ai_providers.local_provider.OpenAI') as mock_openai:
+        with patch("ai_providers.local_provider.OpenAI") as mock_openai:
             provider = LocalProvider("test_key", "test_model", "http://localhost:8000")
             return provider
 

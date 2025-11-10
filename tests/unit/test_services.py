@@ -1,4 +1,5 @@
 """Unit tests for service classes."""
+
 import pytest
 import asyncio
 from unittest.mock import Mock, AsyncMock, patch
@@ -12,14 +13,14 @@ class TestBotService:
     @pytest.fixture
     def bot_service(self):
         """Create a BotService instance."""
-        with patch('services.bot_service.get_config'):
+        with patch("services.bot_service.get_config"):
             service = BotService()
             return service
 
     @pytest.mark.asyncio
     async def test_initialization(self, bot_service):
         """Test bot service initialization."""
-        with patch('services.bot_service.Application.builder') as mock_builder:
+        with patch("services.bot_service.Application.builder") as mock_builder:
             mock_app = Mock()
             mock_builder.return_value.token.return_value.post_init.return_value.build.return_value = mock_app
 
@@ -45,8 +46,9 @@ class TestBotService:
         mock_app = AsyncMock()
         bot_service.app = mock_app
 
-        with patch('services.bot_service.profile_manager') as mock_pm, \
-             patch('services.bot_service.message_history') as mock_mh:
+        with patch("services.bot_service.profile_manager") as mock_pm, patch(
+            "services.bot_service.message_history"
+        ) as mock_mh:
 
             mock_pm.save_all_profiles.return_value = 5
 
@@ -59,7 +61,7 @@ class TestBotService:
     @pytest.mark.asyncio
     async def test_run_without_app(self, bot_service):
         """Test running bot without initialized app."""
-        with patch.object(bot_service, 'run') as mock_run:
+        with patch.object(bot_service, "run") as mock_run:
             # This should not raise any event loop errors
             bot_service.start()
 
@@ -68,7 +70,7 @@ class TestBotService:
 
     def test_start_method_calls_run(self, bot_service):
         """Test that start() method calls run() without event loop conflicts."""
-        with patch.object(bot_service, 'run') as mock_run:
+        with patch.object(bot_service, "run") as mock_run:
             # This should not raise any event loop errors
             bot_service.start()
 
@@ -88,30 +90,90 @@ class TestProfileRegenerationService:
         mock_config.model_name = "test_model"
         mock_config.base_url = "http://localhost:8000"
 
-        with patch('services.profile_regeneration_service.get_config', return_value=mock_config):
+        with patch("services.profile_regeneration_service.get_config", return_value=mock_config):
             service = ProfileRegenerationService()
             return service
 
     @pytest.mark.asyncio
     async def test_regenerate_all_profiles_success(self, regen_service):
         """Test successful profile regeneration."""
-        with patch('services.profile_regeneration_service.message_history') as mock_mh, \
-             patch('services.profile_regeneration_service.profile_manager') as mock_pm, \
-             patch('services.profile_regeneration_service.create_provider') as mock_create_provider:
+        with patch("services.profile_regeneration_service.message_history") as mock_mh, patch(
+            "services.profile_regeneration_service.profile_manager"
+        ) as mock_pm, patch("services.profile_regeneration_service.create_provider") as mock_create_provider:
 
             # Mock message history - need at least 5 messages per user
             mock_mh.get_all_chat_ids.return_value = [123]
             mock_mh.get_recent_messages.return_value = [
-                {'user_id': 111, 'text': 'Hello world 1', 'username': 'user1', 'first_name': 'User', 'last_name': 'One'},
-                {'user_id': 111, 'text': 'Hello world 2', 'username': 'user1', 'first_name': 'User', 'last_name': 'One'},
-                {'user_id': 111, 'text': 'Hello world 3', 'username': 'user1', 'first_name': 'User', 'last_name': 'One'},
-                {'user_id': 111, 'text': 'Hello world 4', 'username': 'user1', 'first_name': 'User', 'last_name': 'One'},
-                {'user_id': 111, 'text': 'Hello world 5', 'username': 'user1', 'first_name': 'User', 'last_name': 'One'},
-                {'user_id': 222, 'text': 'Test message 1', 'username': 'user2', 'first_name': 'User', 'last_name': 'Two'},
-                {'user_id': 222, 'text': 'Test message 2', 'username': 'user2', 'first_name': 'User', 'last_name': 'Two'},
-                {'user_id': 222, 'text': 'Test message 3', 'username': 'user2', 'first_name': 'User', 'last_name': 'Two'},
-                {'user_id': 222, 'text': 'Test message 4', 'username': 'user2', 'first_name': 'User', 'last_name': 'Two'},
-                {'user_id': 222, 'text': 'Test message 5', 'username': 'user2', 'first_name': 'User', 'last_name': 'Two'}
+                {
+                    "user_id": 111,
+                    "text": "Hello world 1",
+                    "username": "user1",
+                    "first_name": "User",
+                    "last_name": "One",
+                },
+                {
+                    "user_id": 111,
+                    "text": "Hello world 2",
+                    "username": "user1",
+                    "first_name": "User",
+                    "last_name": "One",
+                },
+                {
+                    "user_id": 111,
+                    "text": "Hello world 3",
+                    "username": "user1",
+                    "first_name": "User",
+                    "last_name": "One",
+                },
+                {
+                    "user_id": 111,
+                    "text": "Hello world 4",
+                    "username": "user1",
+                    "first_name": "User",
+                    "last_name": "One",
+                },
+                {
+                    "user_id": 111,
+                    "text": "Hello world 5",
+                    "username": "user1",
+                    "first_name": "User",
+                    "last_name": "One",
+                },
+                {
+                    "user_id": 222,
+                    "text": "Test message 1",
+                    "username": "user2",
+                    "first_name": "User",
+                    "last_name": "Two",
+                },
+                {
+                    "user_id": 222,
+                    "text": "Test message 2",
+                    "username": "user2",
+                    "first_name": "User",
+                    "last_name": "Two",
+                },
+                {
+                    "user_id": 222,
+                    "text": "Test message 3",
+                    "username": "user2",
+                    "first_name": "User",
+                    "last_name": "Two",
+                },
+                {
+                    "user_id": 222,
+                    "text": "Test message 4",
+                    "username": "user2",
+                    "first_name": "User",
+                    "last_name": "Two",
+                },
+                {
+                    "user_id": 222,
+                    "text": "Test message 5",
+                    "username": "user2",
+                    "first_name": "User",
+                    "last_name": "Two",
+                },
             ]
 
             # Mock AI provider
@@ -127,38 +189,68 @@ class TestProfileRegenerationService:
 
             result = await regen_service.regenerate_all_profiles()
 
-            assert result['processed'] == 2
-            assert result['total'] == 2
-            assert 'message' not in result
+            assert result["processed"] == 2
+            assert result["total"] == 2
+            assert "message" not in result
 
     @pytest.mark.asyncio
     async def test_regenerate_all_profiles_no_messages(self, regen_service):
         """Test profile regeneration with no messages."""
-        with patch('services.profile_regeneration_service.message_history') as mock_mh:
+        with patch("services.profile_regeneration_service.message_history") as mock_mh:
             mock_mh.get_all_chat_ids.return_value = []
             mock_mh.get_recent_messages.return_value = []
 
             result = await regen_service.regenerate_all_profiles()
 
-            assert result['processed'] == 0
-            assert result['total'] == 0
-            assert result['message'] == 'No user messages found'
+            assert result["processed"] == 0
+            assert result["total"] == 0
+            assert result["message"] == "No user messages found"
 
     @pytest.mark.asyncio
     async def test_regenerate_all_profiles_ai_error(self, regen_service):
         """Test profile regeneration with AI errors."""
-        with patch('services.profile_regeneration_service.message_history') as mock_mh, \
-             patch('services.profile_regeneration_service.profile_manager') as mock_pm, \
-             patch('services.profile_regeneration_service.create_provider') as mock_create_provider:
+        with patch("services.profile_regeneration_service.message_history") as mock_mh, patch(
+            "services.profile_regeneration_service.profile_manager"
+        ) as mock_pm, patch("services.profile_regeneration_service.create_provider") as mock_create_provider:
 
             # Mock message history - need at least 5 messages
             mock_mh.get_all_chat_ids.return_value = [123]
             mock_mh.get_recent_messages.return_value = [
-                {'user_id': 111, 'text': 'Hello world 1', 'username': 'user1', 'first_name': 'User', 'last_name': 'One'},
-                {'user_id': 111, 'text': 'Hello world 2', 'username': 'user1', 'first_name': 'User', 'last_name': 'One'},
-                {'user_id': 111, 'text': 'Hello world 3', 'username': 'user1', 'first_name': 'User', 'last_name': 'One'},
-                {'user_id': 111, 'text': 'Hello world 4', 'username': 'user1', 'first_name': 'User', 'last_name': 'One'},
-                {'user_id': 111, 'text': 'Hello world 5', 'username': 'user1', 'first_name': 'User', 'last_name': 'One'}
+                {
+                    "user_id": 111,
+                    "text": "Hello world 1",
+                    "username": "user1",
+                    "first_name": "User",
+                    "last_name": "One",
+                },
+                {
+                    "user_id": 111,
+                    "text": "Hello world 2",
+                    "username": "user1",
+                    "first_name": "User",
+                    "last_name": "One",
+                },
+                {
+                    "user_id": 111,
+                    "text": "Hello world 3",
+                    "username": "user1",
+                    "first_name": "User",
+                    "last_name": "One",
+                },
+                {
+                    "user_id": 111,
+                    "text": "Hello world 4",
+                    "username": "user1",
+                    "first_name": "User",
+                    "last_name": "One",
+                },
+                {
+                    "user_id": 111,
+                    "text": "Hello world 5",
+                    "username": "user1",
+                    "first_name": "User",
+                    "last_name": "One",
+                },
             ]
 
             # Mock AI provider that fails
@@ -172,23 +264,23 @@ class TestProfileRegenerationService:
 
             result = await regen_service.regenerate_all_profiles()
 
-            assert result['processed'] == 0
-            assert result['failed'] == 1
-            assert result['total'] == 1
+            assert result["processed"] == 0
+            assert result["failed"] == 1
+            assert result["total"] == 1
 
     @pytest.mark.asyncio
     async def test_regenerate_all_profiles_skip_few_messages(self, regen_service):
         """Test skipping users with too few messages."""
-        with patch('services.profile_regeneration_service.message_history') as mock_mh, \
-             patch('services.profile_regeneration_service.profile_manager') as mock_pm, \
-             patch('services.profile_regeneration_service.create_provider') as mock_create_provider:
+        with patch("services.profile_regeneration_service.message_history") as mock_mh, patch(
+            "services.profile_regeneration_service.profile_manager"
+        ) as mock_pm, patch("services.profile_regeneration_service.create_provider") as mock_create_provider:
 
             # Mock message history with user having only 3 messages
             mock_mh.get_all_chat_ids.return_value = [123]
             mock_mh.get_recent_messages.return_value = [
-                {'user_id': 111, 'text': 'Hi', 'username': 'user1', 'first_name': 'User', 'last_name': 'One'},
-                {'user_id': 111, 'text': 'Hello', 'username': 'user1', 'first_name': 'User', 'last_name': 'One'},
-                {'user_id': 111, 'text': 'Hey', 'username': 'user1', 'first_name': 'User', 'last_name': 'One'}
+                {"user_id": 111, "text": "Hi", "username": "user1", "first_name": "User", "last_name": "One"},
+                {"user_id": 111, "text": "Hello", "username": "user1", "first_name": "User", "last_name": "One"},
+                {"user_id": 111, "text": "Hey", "username": "user1", "first_name": "User", "last_name": "One"},
             ]
 
             # Mock AI provider
@@ -201,9 +293,9 @@ class TestProfileRegenerationService:
 
             result = await regen_service.regenerate_all_profiles()
 
-            assert result['processed'] == 0
-            assert result['skipped'] == 1
-            assert result['total'] == 1
+            assert result["processed"] == 0
+            assert result["skipped"] == 1
+            assert result["total"] == 1
 
             # AI should not have been called
             mock_ai.free_request.assert_not_called()

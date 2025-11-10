@@ -1,4 +1,5 @@
 """Command registry for managing all bot commands."""
+
 import logging
 from typing import Dict, List, Optional
 from telegram import BotCommand
@@ -96,7 +97,7 @@ class CommandRegistry:
         """
         return [f"/{name}" for name in self._commands.keys()]
 
-    def generate_help_text(self, user_id: int, config, language: str = 'en') -> str:
+    def generate_help_text(self, user_id: int, config, language: str = "en") -> str:
         """Generate help text based on available commands.
 
         Args:
@@ -109,7 +110,7 @@ class CommandRegistry:
         """
         available_commands = self.get_user_commands(user_id, config)
 
-        if language == 'ru':
+        if language == "ru":
             return self._generate_russian_help(available_commands, user_id, config)
         else:
             return self._generate_english_help(available_commands, user_id, config)

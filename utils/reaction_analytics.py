@@ -1,4 +1,5 @@
 """Reaction analytics and reporting utilities."""
+
 import logging
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime, timedelta
@@ -44,32 +45,32 @@ class ReactionAnalytics:
             total_reactions = len(recent_reactions)
 
             for reaction_data in recent_reactions:
-                emoji = reaction_data['emoji']
+                emoji = reaction_data["emoji"]
                 sentiment = self._classify_emoji_sentiment(emoji)
                 sentiment_counts[sentiment] += 1
 
             # Calculate percentages
-            positive_pct = (sentiment_counts['positive'] / total_reactions) * 100
-            negative_pct = (sentiment_counts['negative'] / total_reactions) * 100
-            neutral_pct = (sentiment_counts['neutral'] / total_reactions) * 100
+            positive_pct = (sentiment_counts["positive"] / total_reactions) * 100
+            negative_pct = (sentiment_counts["negative"] / total_reactions) * 100
+            neutral_pct = (sentiment_counts["neutral"] / total_reactions) * 100
 
             # Determine overall mood
             overall_mood = self._determine_overall_mood(positive_pct, negative_pct, neutral_pct)
 
             # Get active users count (users who reacted in last 24h)
-            active_users = len(set(r['user_id'] for r in recent_reactions))
+            active_users = len(set(r["user_id"] for r in recent_reactions))
 
             # Generate insight message
             message = self._generate_mood_insight(overall_mood, positive_pct, negative_pct, total_reactions)
 
             return {
-                'overall_mood': overall_mood,
-                'positive_percentage': round(positive_pct, 1),
-                'negative_percentage': round(negative_pct, 1),
-                'neutral_percentage': round(neutral_pct, 1),
-                'active_users': active_users,
-                'recent_reactions': total_reactions,
-                'message': message
+                "overall_mood": overall_mood,
+                "positive_percentage": round(positive_pct, 1),
+                "negative_percentage": round(negative_pct, 1),
+                "neutral_percentage": round(neutral_pct, 1),
+                "active_users": active_users,
+                "recent_reactions": total_reactions,
+                "message": message,
             }
 
         except Exception as e:
@@ -93,11 +94,7 @@ class ReactionAnalytics:
                 return self._get_empty_user_stats()
 
             # Calculate favorite reactions (top 5)
-            favorite_reactions = sorted(
-                patterns.favorite_reactions.items(),
-                key=lambda x: x[1],
-                reverse=True
-            )[:5]
+            favorite_reactions = sorted(patterns.favorite_reactions.items(), key=lambda x: x[1], reverse=True)[:5]
 
             # Calculate emotional distribution
             emotional_dist = {}
@@ -118,12 +115,12 @@ class ReactionAnalytics:
             personality_insights = self._analyze_reaction_personality(patterns)
 
             return {
-                'total_reactions': patterns.total_reactions,
-                'favorite_reactions': favorite_reactions,
-                'emotional_distribution': emotional_dist,
-                'reaction_targets': target_dist,
-                'personality_insights': personality_insights,
-                'reaction_rate': self._calculate_reaction_rate(user_id)
+                "total_reactions": patterns.total_reactions,
+                "favorite_reactions": favorite_reactions,
+                "emotional_distribution": emotional_dist,
+                "reaction_targets": target_dist,
+                "personality_insights": personality_insights,
+                "reaction_rate": self._calculate_reaction_rate(user_id),
             }
 
         except Exception as e:
@@ -143,21 +140,21 @@ class ReactionAnalytics:
             # This would analyze bot's reaction patterns and responses
             # For now, return placeholder data
             return {
-                'bot_reactions_sent': 0,
-                'average_response_time': 0,
-                'engagement_rate': 0,
-                'top_performing_emojis': [],
-                'insights': ['Reaction effectiveness tracking not yet implemented']
+                "bot_reactions_sent": 0,
+                "average_response_time": 0,
+                "engagement_rate": 0,
+                "top_performing_emojis": [],
+                "insights": ["Reaction effectiveness tracking not yet implemented"],
             }
 
         except Exception as e:
             logger.error(f"Error analyzing reaction effectiveness for chat {chat_id}: {e}")
             return {
-                'bot_reactions_sent': 0,
-                'average_response_time': 0,
-                'engagement_rate': 0,
-                'top_performing_emojis': [],
-                'insights': ['Error analyzing effectiveness']
+                "bot_reactions_sent": 0,
+                "average_response_time": 0,
+                "engagement_rate": 0,
+                "top_performing_emojis": [],
+                "insights": ["Error analyzing effectiveness"],
             }
 
     def _get_recent_reactions(self, chat_id: int, hours: int = 24) -> List[Dict[str, Any]]:
@@ -186,15 +183,15 @@ class ReactionAnalytics:
         Returns:
             str: 'positive', 'negative', or 'neutral'
         """
-        positive_emojis = {'👍', '❤️', '🔥', '😊', '😂', '🎉', '✅', '💯', '😄', '😍', '🥰', '🤗'}
-        negative_emojis = {'👎', '😠', '😢', '💔', '❌', '😞', '😔', '😕', '😣', '😖'}
+        positive_emojis = {"👍", "❤️", "🔥", "😊", "😂", "🎉", "✅", "💯", "😄", "😍", "🥰", "🤗"}
+        negative_emojis = {"👎", "😠", "😢", "💔", "❌", "😞", "😔", "😕", "😣", "😖"}
 
         if emoji in positive_emojis:
-            return 'positive'
+            return "positive"
         elif emoji in negative_emojis:
-            return 'negative'
+            return "negative"
         else:
-            return 'neutral'
+            return "neutral"
 
     def _determine_overall_mood(self, positive_pct: float, negative_pct: float, neutral_pct: float) -> str:
         """Determine overall group mood.
@@ -251,13 +248,13 @@ class ReactionAnalytics:
             Dict with empty mood data
         """
         return {
-            'overall_mood': 'Unknown',
-            'positive_percentage': 0.0,
-            'negative_percentage': 0.0,
-            'neutral_percentage': 0.0,
-            'active_users': 0,
-            'recent_reactions': 0,
-            'message': message
+            "overall_mood": "Unknown",
+            "positive_percentage": 0.0,
+            "negative_percentage": 0.0,
+            "neutral_percentage": 0.0,
+            "active_users": 0,
+            "recent_reactions": 0,
+            "message": message,
         }
 
     def _get_empty_user_stats(self) -> Dict[str, Any]:
@@ -267,12 +264,12 @@ class ReactionAnalytics:
             Dict with empty user statistics
         """
         return {
-            'total_reactions': 0,
-            'favorite_reactions': [],
-            'emotional_distribution': {},
-            'reaction_targets': {},
-            'personality_insights': ['No reaction data available'],
-            'reaction_rate': 0.0
+            "total_reactions": 0,
+            "favorite_reactions": [],
+            "emotional_distribution": {},
+            "reaction_targets": {},
+            "personality_insights": ["No reaction data available"],
+            "reaction_rate": 0.0,
         }
 
     def _analyze_reaction_personality(self, patterns) -> List[str]:
@@ -289,20 +286,20 @@ class ReactionAnalytics:
         # Analyze favorite reactions
         if patterns.favorite_reactions:
             top_emoji = max(patterns.favorite_reactions.items(), key=lambda x: x[1])[0]
-            if top_emoji in ['😂', '😄', '🤣']:
+            if top_emoji in ["😂", "😄", "🤣"]:
                 insights.append("Has a great sense of humor and appreciates jokes")
-            elif top_emoji in ['❤️', '🥰', '😍']:
+            elif top_emoji in ["❤️", "🥰", "😍"]:
                 insights.append("Very affectionate and shows appreciation often")
-            elif top_emoji in ['👍', '✅', '💯']:
+            elif top_emoji in ["👍", "✅", "💯"]:
                 insights.append("Supportive and encouraging of others")
-            elif top_emoji in ['🤔', '💭', '🧐']:
+            elif top_emoji in ["🤔", "💭", "🧐"]:
                 insights.append("Thoughtful and contemplative")
 
         # Analyze emotional distribution
         if patterns.emotional_responses:
-            positive_count = patterns.emotional_responses.get('positive', 0)
-            negative_count = patterns.emotional_responses.get('negative', 0)
-            thoughtful_count = patterns.emotional_responses.get('thoughtful', 0)
+            positive_count = patterns.emotional_responses.get("positive", 0)
+            negative_count = patterns.emotional_responses.get("negative", 0)
+            thoughtful_count = patterns.emotional_responses.get("thoughtful", 0)
 
             total = positive_count + negative_count + thoughtful_count
             if total > 0:
@@ -312,9 +309,9 @@ class ReactionAnalytics:
                     insights.append("Tends to think deeply about content")
 
         # Analyze reaction targets
-        if 'humor' in patterns.reaction_targets:
+        if "humor" in patterns.reaction_targets:
             insights.append("Really enjoys humorous content")
-        if 'questions' in patterns.reaction_targets:
+        if "questions" in patterns.reaction_targets:
             insights.append("Engages with thoughtful questions")
 
         if not insights:

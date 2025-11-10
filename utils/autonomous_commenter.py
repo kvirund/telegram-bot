@@ -1,4 +1,5 @@
 """Autonomous commenting engine for intelligent bot participation."""
+
 import logging
 import random
 import json
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AutonomousComment:
     """Structure for autonomous comment with targeting info."""
+
     text: str
     reply_to_message_id: Optional[int] = None  # None = standalone
     target_user_id: Optional[int] = None  # For profile tracking
@@ -27,6 +29,7 @@ class AutonomousComment:
 @dataclass
 class ChatState:
     """Track state for each chat for autonomous commenting."""
+
     chat_id: int
     messages_since_last_comment: int = 0
     last_comment_time: Optional[datetime] = None
@@ -38,11 +41,7 @@ class ChatState:
 class AutonomousCommenter:
     """Manages autonomous, intelligent bot comments."""
 
-    def __init__(
-        self,
-        config: BotConfig,
-        profile_manager: ProfileManager
-    ):
+    def __init__(self, config: BotConfig, profile_manager: ProfileManager):
         """Initialize autonomous commenter.
 
         Args:
@@ -66,14 +65,8 @@ class AutonomousCommenter:
         """
         if chat_id not in self.chat_states:
             ac_config = self.config.yaml_config.autonomous_commenting
-            threshold = random.randint(
-                ac_config.min_messages_between_comments,
-                ac_config.max_messages_between_comments
-            )
-            self.chat_states[chat_id] = ChatState(
-                chat_id=chat_id,
-                next_comment_threshold=threshold
-            )
+            threshold = random.randint(ac_config.min_messages_between_comments, ac_config.max_messages_between_comments)
+            self.chat_states[chat_id] = ChatState(chat_id=chat_id, next_comment_threshold=threshold)
         return self.chat_states[chat_id]
 
     def add_message(self, chat_id: int, message: Message) -> None:
@@ -137,8 +130,7 @@ class AutonomousCommenter:
         if random.random() > adjusted_probability:
             # Reset threshold and try again later
             state.next_comment_threshold = random.randint(
-                ac_config.min_messages_between_comments,
-                ac_config.max_messages_between_comments
+                ac_config.min_messages_between_comments, ac_config.max_messages_between_comments
             )
             return False
 
@@ -168,8 +160,7 @@ class AutonomousCommenter:
 
         state = self._get_chat_state(chat_id)
         recent_messages = [
-            msg for msg in state.recent_messages[-10:]
-            if msg.from_user and msg.from_user.id != bot_user_id
+            msg for msg in state.recent_messages[-10:] if msg.from_user and msg.from_user.id != bot_user_id
         ]
 
         if not recent_messages:
@@ -199,14 +190,15 @@ Respond with ONLY "YES" or "NO" (one word)."""
 
         try:
             response = await ai_provider.free_request(
-                user_message=prompt,
-                system_message="You are a conversation analyst. Respond with only YES or NO."
+                user_message=prompt, system_message="You are a conversation analyst. Respond with only YES or NO."
             )
 
             decision = response.strip().upper()
             should_comment = "YES" in decision or "ДА" in decision
 
-            logger.info(f"AI decision for chat {chat_id}: {'comment' if should_comment else 'wait'} (response: {decision})")
+            logger.info(
+                f"AI decision for chat {chat_id}: {'comment' if should_comment else 'wait'} (response: {decision})"
+            )
             return should_comment
 
         except Exception as e:
@@ -248,23 +240,35 @@ Respond with ONLY "YES" or "NO" (one word)."""
             if msg.text:
                 text_lower = msg.text.lower()
                 # English keywords
-                english_keywords = ['help', 'error', 'bug', 'problem', 'why', 'how', 'what', 'when']
+                english_keywords = ["help", "error", "bug", "problem", "why", "how", "what", "when"]
                 # Russian keywords
-                russian_keywords = ['помощь', 'ошибка', 'баг', 'проблема', 'почему', 'как', 'что', 'когда', 
-                                   'помогите', 'не работает', 'сломалось', 'непонятно']
+                russian_keywords = [
+                    "помощь",
+                    "ошибка",
+                    "баг",
+                    "проблема",
+                    "почему",
+                    "как",
+                    "что",
+                    "когда",
+                    "помогите",
+                    "не работает",
+                    "сломалось",
+                    "непонятно",
+                ]
 
                 all_keywords = english_keywords + russian_keywords
                 if any(word in text_lower for word in all_keywords):
                     return True
 
                 # Look for typos (repeated chars in both Latin and Cyrillic)
-                if '???' in text_lower:
+                if "???" in text_lower:
                     return True
                 # Latin repeated chars
-                if any(char * 3 in msg.text for char in 'abcdefghijklmnopqrstuvwxyz'):
+                if any(char * 3 in msg.text for char in "abcdefghijklmnopqrstuvwxyz"):
                     return True
                 # Cyrillic repeated chars
-                if any(char * 3 in msg.text for char in 'абвгдежзийклмнопрстуфхцчшщъыьэюя'):
+                if any(char * 3 in msg.text for char in "абвгдежзийклмнопрстуфхцчшщъыьэюя"):
                     return True
 
         return True
@@ -282,16 +286,10 @@ Respond with ONLY "YES" or "NO" (one word)."""
         # Set new random threshold
         ac_config = self.config.yaml_config.autonomous_commenting
         state.next_comment_threshold = random.randint(
-            ac_config.min_messages_between_comments,
-            ac_config.max_messages_between_comments
+            ac_config.min_messages_between_comments, ac_config.max_messages_between_comments
         )
 
-    async def generate_comment(
-        self,
-        chat_id: int,
-        ai_provider,
-        bot_user_id: int
-    ) -> Optional[AutonomousComment]:
+    async def generate_comment(self, chat_id: int, ai_provider, bot_user_id: int) -> Optional[AutonomousComment]:
         """Generate an autonomous comment.
 
         Args:
@@ -308,14 +306,12 @@ Respond with ONLY "YES" or "NO" (one word)."""
         cm_config = self.config.yaml_config.conversation_monitoring
 
         # Get recent messages (excluding bot's own)
-        recent_messages = [
-            msg for msg in state.recent_messages
-            if msg.from_user and msg.from_user.id != bot_user_id
-        ]
+        recent_messages = [msg for msg in state.recent_messages if msg.from_user and msg.from_user.id != bot_user_id]
 
         # If no messages in memory, try to load from context_history
         if not recent_messages:
             from utils.context_extractor import message_history
+
             recent_msg_dicts = message_history.get_recent_messages(chat_id)
 
             if recent_msg_dicts:
@@ -335,14 +331,14 @@ Respond with ONLY "YES" or "NO" (one word)."""
         if recent_msg_dicts:
             # Use messages from context_history
             for msg_dict in recent_msg_dicts[-10:]:
-                user_id = msg_dict.get('user_id', 0)
+                user_id = msg_dict.get("user_id", 0)
                 if user_id and user_id not in user_ids and user_id != bot_user_id:
                     user_ids.append(user_id)
 
-                text = msg_dict.get('text', '').strip()
+                text = msg_dict.get("text", "").strip()
                 if text:
-                    username = msg_dict.get('first_name') or msg_dict.get('username') or "User"
-                    msg_id = msg_dict.get('message_id', 0)
+                    username = msg_dict.get("first_name") or msg_dict.get("username") or "User"
+                    msg_id = msg_dict.get("message_id", 0)
                     conversation_lines.append(f"[ID:{msg_id}] {username}: {text}")
         else:
             # Use messages from memory
@@ -367,18 +363,19 @@ Respond with ONLY "YES" or "NO" (one word)."""
             profile = self.profile_manager.load_profile(user_id)
             profiles[user_id] = profile
 
-            # Enrich profile with AI if we have enough context  
+            # Enrich profile with AI if we have enough context
             if len(conversation_lines) >= 5 and profile.message_count % 10 == 0:
                 # Enrich every 10 messages
                 try:
-                    user_conversation = "\n".join([
-                        line for line in conversation_lines
-                        if f"ID:{user_id}" not in line or profile.first_name in line
-                    ])
+                    user_conversation = "\n".join(
+                        [
+                            line
+                            for line in conversation_lines
+                            if f"ID:{user_id}" not in line or profile.first_name in line
+                        ]
+                    )
                     if user_conversation:
-                        await self.profile_manager.enrich_profile_with_ai(
-                            user_id, user_conversation, ai_provider
-                        )
+                        await self.profile_manager.enrich_profile_with_ai(user_id, user_conversation, ai_provider)
                 except Exception as e:
                     logger.error(f"Error enriching profile for {user_id}: {e}")
 
@@ -410,14 +407,13 @@ Respond with ONLY "YES" or "NO" (one word)."""
             should_roast=should_roast,
             prefer_reply=prefer_reply,
             aggression_level=ac_config.roasting_aggression,
-            uncensored=cm_config.uncensored_mode
+            uncensored=cm_config.uncensored_mode,
         )
 
         try:
             # Get AI response
             response = await ai_provider.generate_autonomous_comment(
-                prompt=prompt,
-                language=profiles[user_ids[0]].language_preference if user_ids else "en"
+                prompt=prompt, language=profiles[user_ids[0]].language_preference if user_ids else "en"
             )
 
             # Parse response (expecting JSON)
@@ -425,10 +421,10 @@ Respond with ONLY "YES" or "NO" (one word)."""
 
             if comment_data:
                 return AutonomousComment(
-                    text=comment_data['comment'],
-                    reply_to_message_id=comment_data.get('reply_to_message_id'),
-                    target_user_id=comment_data.get('target_user_id'),
-                    comment_type=comment_data.get('type', 'observation')
+                    text=comment_data["comment"],
+                    reply_to_message_id=comment_data.get("reply_to_message_id"),
+                    target_user_id=comment_data.get("target_user_id"),
+                    comment_type=comment_data.get("type", "observation"),
                 )
         except Exception as e:
             logger.error(f"Error generating autonomous comment: {e}", exc_info=True)
@@ -442,7 +438,7 @@ Respond with ONLY "YES" or "NO" (one word)."""
         should_roast: bool,
         prefer_reply: bool,
         aggression_level: float,
-        uncensored: bool
+        uncensored: bool,
     ) -> str:
         """Build prompt for AI comment generation.
 
@@ -519,21 +515,21 @@ IMPORTANT: Respond ONLY with valid JSON, no other text."""
         """
         try:
             # Try to find JSON in response
-            start = response.find('{')
-            end = response.rfind('}') + 1
+            start = response.find("{")
+            end = response.rfind("}") + 1
 
             if start >= 0 and end > start:
                 json_text = response[start:end]
                 data = json.loads(json_text)
 
-                if data.get('should_comment') and data.get('comment'):
+                if data.get("should_comment") and data.get("comment"):
                     # Validate and clean reply_to_message_id
-                    reply_id = data.get('reply_to_message_id')
+                    reply_id = data.get("reply_to_message_id")
                     if reply_id is not None:
                         # Handle cases where AI returns formatted strings like "[ID:12345]"
                         if isinstance(reply_id, str):
                             # Extract number from [ID:X] format
-                            if reply_id.startswith('[ID:') and reply_id.endswith(']'):
+                            if reply_id.startswith("[ID:") and reply_id.endswith("]"):
                                 try:
                                     reply_id = int(reply_id[4:-1])
                                 except ValueError:
@@ -544,10 +540,14 @@ IMPORTANT: Respond ONLY with valid JSON, no other text."""
                                 try:
                                     reply_id = int(reply_id)
                                 except ValueError:
-                                    logger.warning(f"reply_to_message_id is not a valid number: {reply_id}, setting to None")
+                                    logger.warning(
+                                        f"reply_to_message_id is not a valid number: {reply_id}, setting to None"
+                                    )
                                     reply_id = None
                         elif not isinstance(reply_id, int):
-                            logger.warning(f"reply_to_message_id must be int or None, got {type(reply_id)}: {reply_id}, setting to None")
+                            logger.warning(
+                                f"reply_to_message_id must be int or None, got {type(reply_id)}: {reply_id}, setting to None"
+                            )
                             reply_id = None
 
                         # Ensure it's a positive integer (valid message ID)
@@ -555,7 +555,7 @@ IMPORTANT: Respond ONLY with valid JSON, no other text."""
                             logger.warning(f"Invalid reply_to_message_id: {reply_id}, setting to None")
                             reply_id = None
 
-                        data['reply_to_message_id'] = reply_id
+                        data["reply_to_message_id"] = reply_id
 
                     return data
         except Exception as e:
@@ -579,19 +579,19 @@ IMPORTANT: Respond ONLY with valid JSON, no other text."""
             mood_data = reaction_analytics.get_group_mood(chat_id)
 
             # If group is very positive, slightly increase probability
-            if mood_data['overall_mood'] == "Very Positive":
+            if mood_data["overall_mood"] == "Very Positive":
                 adjusted = min(base_probability * 1.2, 0.95)  # Increase by 20%, max 95%
                 logger.debug(f"Very positive mood detected, increasing comment probability to {adjusted}")
                 return adjusted
 
             # If group is negative, decrease probability
-            elif mood_data['overall_mood'] == "Negative":
+            elif mood_data["overall_mood"] == "Negative":
                 adjusted = base_probability * 0.7  # Decrease by 30%
                 logger.debug(f"Negative mood detected, decreasing comment probability to {adjusted}")
                 return adjusted
 
             # If mixed feelings, slightly decrease probability
-            elif mood_data['overall_mood'] == "Mixed":
+            elif mood_data["overall_mood"] == "Mixed":
                 adjusted = base_probability * 0.9  # Decrease by 10%
                 logger.debug(f"Mixed mood detected, slightly decreasing comment probability to {adjusted}")
                 return adjusted
@@ -613,16 +613,12 @@ IMPORTANT: Respond ONLY with valid JSON, no other text."""
             Dict with stats
         """
         if chat_id not in self.chat_states:
-            return {
-                "messages_tracked": 0,
-                "last_comment": "Never",
-                "next_threshold": 0
-            }
+            return {"messages_tracked": 0, "last_comment": "Never", "next_threshold": 0}
 
         state = self.chat_states[chat_id]
         return {
             "messages_since_comment": state.messages_since_last_comment,
             "last_comment": state.last_comment_time.isoformat() if state.last_comment_time else "Never",
             "next_threshold": state.next_comment_threshold,
-            "recent_messages_count": len(state.recent_messages)
+            "recent_messages_count": len(state.recent_messages),
         }

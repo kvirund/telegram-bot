@@ -1,4 +1,5 @@
 """Unit tests for profile management functionality."""
+
 import json
 import os
 import tempfile
@@ -8,8 +9,13 @@ from datetime import datetime
 from telegram import Message, User, Chat
 
 from utils.profile_manager import (
-    ProfileManager, UserProfile, SpeakingStyle, UserWeaknesses,
-    UserPatterns, ReactionPatterns, RoastHistory
+    ProfileManager,
+    UserProfile,
+    SpeakingStyle,
+    UserWeaknesses,
+    UserPatterns,
+    ReactionPatterns,
+    RoastHistory,
 )
 
 
@@ -42,7 +48,7 @@ class TestUserProfile:
             "weaknesses": {"technical": [], "personal": []},
             "patterns": {"common_mistakes": []},
             "roast_history": {"successful_roasts": 0},
-            "reaction_patterns": {"total_reactions": 0}
+            "reaction_patterns": {"total_reactions": 0},
         }
         profile = UserProfile.from_dict(data)
         assert profile.user_id == 12345
@@ -146,7 +152,7 @@ class TestProfileManager:
         """Test AI profile enrichment."""
         # Mock AI provider
         mock_ai = AsyncMock()
-        mock_ai.free_request.return_value = '''{
+        mock_ai.free_request.return_value = """{
             "interests": ["programming", "gaming"],
             "technical_weaknesses": ["debugging"],
             "personal_weaknesses": ["procrastination"],
@@ -154,7 +160,7 @@ class TestProfileManager:
             "humor_type": "sarcastic",
             "common_mistakes": ["typos"],
             "embarrassing_moments": ["forgot password"]
-        }'''
+        }"""
 
         # Enrich profile
         await profile_manager.enrich_profile_with_ai(12345, "test messages", mock_ai)

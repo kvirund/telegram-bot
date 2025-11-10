@@ -1,4 +1,5 @@
 """Integration tests for autonomous features and conversation context handling."""
+
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 from telegram import Update, Message, Chat, User
@@ -23,8 +24,9 @@ class TestAutonomousFeaturesIntegration:
         mock_telegram_update.message.text = "This is a test message that should trigger autonomous response"
 
         # Mock autonomous commenter
-        with patch('handlers.autonomous_handler.AutonomousCommenter') as mock_commenter_class, \
-             patch('handlers.autonomous_handler.get_config') as mock_config:
+        with patch("handlers.autonomous_handler.AutonomousCommenter") as mock_commenter_class, patch(
+            "handlers.autonomous_handler.get_config"
+        ) as mock_config:
 
             # Mock config
             config_mock = MagicMock()
@@ -52,7 +54,7 @@ class TestAutonomousFeaturesIntegration:
         mock_telegram_update.message.text = "This message should not trigger autonomous response"
 
         # Mock config with autonomous commenting disabled
-        with patch('handlers.autonomous_handler.get_config') as mock_config:
+        with patch("handlers.autonomous_handler.get_config") as mock_config:
             config_mock = MagicMock()
             config_mock.yaml_config.autonomous_commenting.enabled = False
             mock_config.return_value = config_mock
@@ -68,12 +70,12 @@ class TestAutonomousFeaturesIntegration:
         """Test mention handler integration with AI provider."""
         # Setup
         mock_telegram_update.message.text = "@testbot tell me a joke"
-        mock_telegram_update.message.entities = [MagicMock(type='mention', offset=0, length=8)]
+        mock_telegram_update.message.entities = [MagicMock(type="mention", offset=0, length=8)]
 
         # Mock dependencies
-        with patch('handlers.mention_handler.get_ai_provider', return_value=mock_ai_provider), \
-             patch('handlers.mention_handler.get_config') as mock_config, \
-             patch('handlers.mention_handler.send_ai_response') as mock_send:
+        with patch("handlers.mention_handler.get_ai_provider", return_value=mock_ai_provider), patch(
+            "handlers.mention_handler.get_config"
+        ) as mock_config, patch("handlers.mention_handler.send_ai_response") as mock_send:
 
             # Mock config
             config_mock = MagicMock()
@@ -99,9 +101,9 @@ class TestConversationContextIntegration:
         mock_telegram_update.message.chat.type = "group"
 
         # Mock message history with context
-        with patch('handlers.commands.joke_command.MessageHistory') as mock_history_class, \
-             patch('handlers.commands.joke_command.get_ai_provider') as mock_provider_factory, \
-             patch('handlers.commands.joke_command.send_joke_response') as mock_send:
+        with patch("handlers.commands.joke_command.MessageHistory") as mock_history_class, patch(
+            "handlers.commands.joke_command.get_ai_provider"
+        ) as mock_provider_factory, patch("handlers.commands.joke_command.send_joke_response") as mock_send:
 
             # Mock history instance
             mock_history = MagicMock()
@@ -115,13 +117,13 @@ class TestConversationContextIntegration:
 
             # Import and call the handler
             from handlers.commands.joke_command import handle_joke_command
+
             await handle_joke_command(mock_telegram_update, mock_context, is_private=False)
 
             # Verify context was extracted and used
             mock_history.get_context.assert_called_once()
             mock_provider.generate_joke.assert_called_once_with(
-                context="Previous conversation context",
-                is_contextual=True
+                context="Previous conversation context", is_contextual=True
             )
             mock_send.assert_called_once()
 
@@ -133,9 +135,9 @@ class TestConversationContextIntegration:
         mock_telegram_update.message.chat.type = "group"
 
         # Mock message history with no context
-        with patch('handlers.commands.joke_command.MessageHistory') as mock_history_class, \
-             patch('handlers.commands.joke_command.get_ai_provider') as mock_provider_factory, \
-             patch('handlers.commands.joke_command.send_joke_response') as mock_send:
+        with patch("handlers.commands.joke_command.MessageHistory") as mock_history_class, patch(
+            "handlers.commands.joke_command.get_ai_provider"
+        ) as mock_provider_factory, patch("handlers.commands.joke_command.send_joke_response") as mock_send:
 
             # Mock history instance
             mock_history = MagicMock()
@@ -149,14 +151,12 @@ class TestConversationContextIntegration:
 
             # Import and call the handler
             from handlers.commands.joke_command import handle_joke_command
+
             await handle_joke_command(mock_telegram_update, mock_context, is_private=False)
 
             # Verify fallback to random joke generation
             mock_history.get_context.assert_called_once()
-            mock_provider.generate_joke.assert_called_once_with(
-                context=None,
-                is_contextual=False
-            )
+            mock_provider.generate_joke.assert_called_once_with(context=None, is_contextual=False)
             mock_send.assert_called_once()
 
 
@@ -170,8 +170,9 @@ class TestReactionSystemIntegration:
         mock_telegram_update.message.text = "This is hilarious! 😂"
 
         # Mock reaction manager
-        with patch('handlers.message_handler.ReactionManager') as mock_reaction_class, \
-             patch('handlers.message_handler.get_config') as mock_config:
+        with patch("handlers.message_handler.ReactionManager") as mock_reaction_class, patch(
+            "handlers.message_handler.get_config"
+        ) as mock_config:
 
             # Mock config
             config_mock = MagicMock()
@@ -187,6 +188,7 @@ class TestReactionSystemIntegration:
 
             # Import and call message handler
             from handlers.message_handler import handle_message
+
             await handle_message(mock_telegram_update, mock_context)
 
             # Verify reaction system was engaged
@@ -200,8 +202,9 @@ class TestReactionSystemIntegration:
         mock_telegram_update.message.text = "This message should not trigger reactions"
 
         # Mock config with reactions disabled
-        with patch('handlers.message_handler.get_config') as mock_config, \
-             patch('handlers.message_handler.ReactionManager') as mock_reaction_class:
+        with patch("handlers.message_handler.get_config") as mock_config, patch(
+            "handlers.message_handler.ReactionManager"
+        ) as mock_reaction_class:
 
             config_mock = MagicMock()
             config_mock.yaml_config.reaction_system.enabled = False
@@ -210,6 +213,7 @@ class TestReactionSystemIntegration:
 
             # Import and call message handler
             from handlers.message_handler import handle_message
+
             await handle_message(mock_telegram_update, mock_context)
 
             # Verify reaction manager was not instantiated
@@ -226,8 +230,9 @@ class TestProfileManagementIntegration:
         mock_telegram_update.message.text = "I love programming!"
 
         # Mock profile manager
-        with patch('handlers.message_handler.ProfileManager') as mock_profile_class, \
-             patch('handlers.message_handler.get_config') as mock_config:
+        with patch("handlers.message_handler.ProfileManager") as mock_profile_class, patch(
+            "handlers.message_handler.get_config"
+        ) as mock_config:
 
             # Mock config
             config_mock = MagicMock()
@@ -241,6 +246,7 @@ class TestProfileManagementIntegration:
 
             # Import and call message handler
             from handlers.message_handler import handle_message
+
             await handle_message(mock_telegram_update, mock_context)
 
             # Verify profile tracking occurred
@@ -253,8 +259,9 @@ class TestProfileManagementIntegration:
         mock_telegram_update.message.text = "Regular message"
 
         # Mock config with profiling disabled
-        with patch('handlers.message_handler.get_config') as mock_config, \
-             patch('handlers.message_handler.ProfileManager') as mock_profile_class:
+        with patch("handlers.message_handler.get_config") as mock_config, patch(
+            "handlers.message_handler.ProfileManager"
+        ) as mock_profile_class:
 
             config_mock = MagicMock()
             config_mock.yaml_config.user_profiling.enabled = False
@@ -263,6 +270,7 @@ class TestProfileManagementIntegration:
 
             # Import and call message handler
             from handlers.message_handler import handle_message
+
             await handle_message(mock_telegram_update, mock_context)
 
             # Verify profile manager was not instantiated

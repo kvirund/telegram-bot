@@ -1,4 +1,5 @@
 """Group mood command handler."""
+
 import logging
 from datetime import datetime
 from telegram import Update
@@ -22,9 +23,7 @@ class GroupMoodCommand(Command):
 
     def __init__(self):
         super().__init__(
-            name="groupmood",
-            description="Show current group sentiment (/groupmood [reset|rebuild])",
-            admin_only=False
+            name="groupmood", description="Show current group sentiment (/groupmood [reset|rebuild])", admin_only=False
         )
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -139,13 +138,13 @@ class GroupMoodCommand(Command):
                 provider_type=config.ai_provider,
                 api_key=config.api_key,
                 model=config.model_name,
-                base_url=config.base_url
+                base_url=config.base_url,
             )
 
             # Group messages by user
             messages_by_user = {}
             for msg in all_messages:
-                user_id = msg.get('from', {}).get('id')
+                user_id = msg.get("from", {}).get("id")
                 if user_id:
                     if user_id not in messages_by_user:
                         messages_by_user[user_id] = []
@@ -158,9 +157,9 @@ class GroupMoodCommand(Command):
                     # Convert messages to text for AI analysis
                     message_texts = []
                     for msg in user_messages[-50:]:  # Use last 50 messages for analysis
-                        if 'text' in msg and msg['text']:
+                        if "text" in msg and msg["text"]:
                             # Include sender info for context
-                            sender_name = msg.get('from', {}).get('first_name', 'User')
+                            sender_name = msg.get("from", {}).get("first_name", "User")
                             message_texts.append(f"{sender_name}: {msg['text']}")
 
                     if message_texts:
@@ -168,9 +167,7 @@ class GroupMoodCommand(Command):
 
                         # Enrich profile with AI
                         await profile_manager.enrich_profile_with_ai(
-                            user_id=user_id,
-                            recent_messages=message_history_text,
-                            ai_analyzer=ai_provider
+                            user_id=user_id, recent_messages=message_history_text, ai_analyzer=ai_provider
                         )
 
                         rebuilt_count += 1
