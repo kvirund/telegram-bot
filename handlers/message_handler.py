@@ -165,14 +165,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
             # Update basic profile info
             profile_manager.update_profile_from_message(message)
-            logger.info(f"[PROFILE] Updated for user {user_id} (@{username}) - Message #{profile_manager.profiles[user_id].message_count}")
+            logger.info(f"[PROFILE] Updated for user {user_id} (@{username}) - "
+                       f"Message #{profile_manager.profiles[user_id].message_count}")
 
             # Check if AI enrichment should be triggered
             current_profile = profile_manager.profiles.get(user_id)
             if current_profile:
                 enrichment_interval = config.yaml_config.user_profiling.enrichment_interval_messages
                 if current_profile.message_count % enrichment_interval == 0:
-                    logger.info(f"[AI-ENRICH] Triggered for user {user_id} (@{username}) after {current_profile.message_count} messages")
+                    logger.info(f"[AI-ENRICH] Triggered for user {user_id} (@{username}) after "
+                               f"{current_profile.message_count} messages")
 
                     # Get recent messages FROM THIS USER ONLY for profile analysis
                     user_messages = message_history.get_user_messages(
@@ -196,7 +198,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                         logger.warning(f"[AI-ENRICH] No messages available for user {user_id} in this chat")
                 else:
                     messages_until_enrichment = enrichment_interval - (current_profile.message_count % enrichment_interval)
-                    logger.debug(f"[PROFILE] Update recorded for user {user_id}. AI enrichment in {messages_until_enrichment} messages")
+                    logger.debug(f"[PROFILE] Update recorded for user {user_id}. "
+                               f"AI enrichment in {messages_until_enrichment} messages")
 
                 # Save profile after update
                 profile_manager.save_profile(user_id)

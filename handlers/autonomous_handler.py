@@ -116,7 +116,8 @@ async def check_and_add_reaction(update: Update, context: ContextTypes.DEFAULT_T
 
         # Check if set_message_reaction is available (requires python-telegram-bot >= 20.0)
         if not hasattr(context.bot, 'set_message_reaction'):
-            logger.warning("Reaction API not available in your python-telegram-bot version. Please upgrade to >= 20.0 for reaction support.")
+            logger.warning("Reaction API not available in your python-telegram-bot version. "
+                         "Please upgrade to >= 20.0 for reaction support.")
             return
 
         # Add reaction to message using ReactionTypeEmoji
