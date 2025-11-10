@@ -117,8 +117,11 @@ class TestYamlConfigLoading:
     def test_load_yaml_config_missing_file(self):
         """Test loading config when file doesn't exist."""
         with patch('config.os.path.join', return_value='/nonexistent/config.yaml'):
-            with pytest.raises(FileNotFoundError):
-                load_yaml_config()
+            yaml_config = load_yaml_config()
+            # Should return default config when file doesn't exist
+            assert yaml_config.bot.telegram_token == ""
+            assert yaml_config.bot.bot_username == ""
+            assert yaml_config.ai.provider == "local"
 
     def test_load_yaml_config_valid_file(self, temp_dir):
         """Test loading valid YAML configuration."""
