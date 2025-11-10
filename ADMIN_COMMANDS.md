@@ -125,6 +125,92 @@ Displays detailed profile information for any user tracked by the bot.
 
 ---
 
+#### `/groupmood` - Show Group Sentiment (Public)
+Displays current group sentiment analysis for the current chat.
+
+**Usage:** (Public command)
+```
+/groupmood
+```
+
+**Information Shown:**
+- Overall mood (positive/neutral/negative)
+- Sentiment distribution percentages
+- Number of active users
+- Recent reaction count
+
+**Examples:**
+```
+/groupmood  # Shows current group mood
+```
+
+---
+
+#### `/groupmood-rebuild` - Rebuild Group Mood Data
+Rebuilds group mood analysis data using different data sources. Admin only.
+
+**Usage:**
+```
+/groupmood-rebuild <channel>|all [context|N|full]
+```
+
+**Parameters:**
+- `<channel>|all`: Channel ID (e.g., -123456789) or 'all' for all channels
+- `[context|N|full]`: Data source (optional, default: context)
+  - `context`: Use current stored context messages
+  - `N`: Use last N messages from Telegram API
+  - `full`: Use full chat history from Telegram API
+
+**Examples:**
+```
+/groupmood-rebuild -123456789        # Rebuild specific channel using context
+/groupmood-rebuild all full          # Rebuild all channels using full history
+/groupmood-rebuild -123456789 N      # Rebuild channel using last N messages
+```
+
+**Features:**
+- Batch processing for performance
+- Progress updates for large operations
+- Uses batching when processing multiple channels
+
+---
+
+#### `/profiles-rebuild` - Rebuild User Profiles
+Rebuilds AI user profiles using different data sources. Admin only.
+
+**Usage:**
+```
+/profiles-rebuild <user>|all [context|N|full] [<channel>]
+```
+
+**Parameters:**
+- `<user>|all`: User ID (e.g., 123456789) or 'all' for all existing profiles
+- `[context|N|full]`: Data source (optional, default: context)
+  - `context`: Use current stored context messages
+  - `N`: Use last N messages from Telegram API
+  - `full`: Use full chat history from Telegram API
+- `[<channel>]`: Optional channel ID to limit data source
+
+**Examples:**
+```
+/profiles-rebuild 123456789              # Rebuild specific user using context
+/profiles-rebuild all full               # Rebuild all profiles using full history
+/profiles-rebuild all N -123456789       # Rebuild all profiles using last N messages from specific channel
+/profiles-rebuild 123456789 context      # Rebuild user using context messages
+```
+
+**Features:**
+- Batch processing for performance
+- Progress updates for large operations
+- AI-powered profile enrichment
+- Channel filtering support
+
+**Notes:**
+- 'all' rebuilds only users who already have profiles
+- Uses AI to extract interests, weaknesses, and behavior patterns
+
+---
+
 ## Access Control
 
 ### User Level
@@ -140,6 +226,8 @@ All user commands plus:
 - `/comment <chat_id>` - Force autonomous comment
 - `/context <chat_id>` - Clear any chat's context
 - `/profile <user>` - View user profiles
+- `/groupmood-rebuild <channel>|all [context|N|full]` - Rebuild group mood data
+- `/profiles-rebuild <user>|all [context|N|full] [<channel>]` - Rebuild user profiles
 
 ### Setting Administrators
 
@@ -261,19 +349,22 @@ See what the bot has learned about you.
 
 ### User Commands
 ```
-/help                    - Show available commands
-/joke                    - Generate contextual joke
-/joke <topic>           - Generate joke about topic
-/ask <question>         - Ask AI question
-/context                 - Clear current chat context
+ /help                    - Show available commands
+ /joke                    - Generate contextual joke
+ /joke <topic>           - Generate joke about topic
+ /ask <question>         - Ask AI question
+ /context                 - Clear current chat context
+ /groupmood               - Show current group sentiment
 ```
 
 ### Admin Commands (Private Chat)
 ```
-/reload                  - Reload bot configuration
-/comment <chat_id>       - Force bot comment
-/context <chat_id>       - Clear specific chat context
-/profile <identifier>    - View user profile
+ /reload                  - Reload bot configuration
+ /comment <chat_id>       - Force bot comment
+ /context <chat_id>       - Clear specific chat context
+ /profile <identifier>    - View user profile
+ /groupmood-rebuild <channel>|all [source]  - Rebuild group mood data
+ /profiles-rebuild <user>|all [source] [channel]  - Rebuild user profiles
 ```
 
 ### Getting Your User ID
