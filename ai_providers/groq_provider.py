@@ -122,7 +122,7 @@ class GroqProvider(AIProvider):
                 "content": user_message
             })
 
-            logger.info(f"Making free request to Groq")
+            logger.info("Making free request to Groq")
 
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -166,7 +166,7 @@ class GroqProvider(AIProvider):
                 }
             ]
 
-            logger.info(f"Generating autonomous comment with Groq")
+            logger.info("Generating autonomous comment with Groq")
 
             response = self.client.chat.completions.create(
                 model=self.model,

@@ -125,7 +125,7 @@ class OpenRouterProvider(AIProvider):
                 "content": user_message
             })
 
-            logger.info(f"Making free request to OpenRouter")
+            logger.info("Making free request to OpenRouter")
 
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -169,7 +169,7 @@ class OpenRouterProvider(AIProvider):
                 }
             ]
 
-            logger.info(f"Generating autonomous comment with OpenRouter")
+            logger.info("Generating autonomous comment with OpenRouter")
 
             response = await self.client.chat.completions.create(
                 model=self.model,

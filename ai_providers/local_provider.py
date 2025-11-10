@@ -127,7 +127,7 @@ class LocalProvider(AIProvider):
                 "content": user_message
             })
 
-            logger.info(f"Making free request to Local API")
+            logger.info("Making free request to Local API")
 
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -171,7 +171,7 @@ class LocalProvider(AIProvider):
                 }
             ]
 
-            logger.info(f"Generating autonomous comment with Local API")
+            logger.info("Generating autonomous comment with Local API")
 
             response = self.client.chat.completions.create(
                 model=self.model,

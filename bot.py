@@ -96,7 +96,7 @@ def main():
     try:
         # Load configuration
         config = get_config()
-        logger.info(f"Configuration loaded successfully")
+        logger.info("Configuration loaded successfully")
         logger.info(f"AI Provider: {config.ai_provider}")
         logger.info(f"Model: {config.model_name}")
         logger.info(f"Bot Username: {config.bot_username}")

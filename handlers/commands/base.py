@@ -1,7 +1,7 @@
 """Base classes for command system."""
 import logging
 from abc import ABC, abstractmethod
-from typing import Callable, Any, Optional
+from typing import Callable, Any
 from telegram import Update
 from telegram.ext import ContextTypes
 

@@ -77,9 +77,9 @@ class GroupMoodCommand(Command):
         # Get group mood analysis
         mood_data = reaction_analytics.get_group_mood(chat_id)
 
-        mood_message = f"😊 Group Mood Analysis\n\n"
+        mood_message = "😊 Group Mood Analysis\n\n"
         mood_message += f"📍 Current Mood: {mood_data['overall_mood'].title()}\n\n"
-        mood_message += f"📊 Sentiment Distribution:\n"
+        mood_message += "📊 Sentiment Distribution:\n"
         mood_message += f"😀 Positive: {mood_data['positive_percentage']}%\n"
         mood_message += f"😐 Neutral: {mood_data['neutral_percentage']}%\n"
         mood_message += f"😞 Negative: {mood_data['negative_percentage']}%\n\n"
@@ -105,10 +105,10 @@ class GroupMoodCommand(Command):
             logger.info(f"Cleared reaction data for chat {chat_id}")
 
             await message.reply_text(
-                f"✅ Group mood data reset for this chat!\n\n"
-                f"🗑️ Cleared all stored reaction data\n"
-                f"🔄 Fresh analysis will start from new reactions\n\n"
-                f"Use `/groupmood` to see the current (empty) state."
+                "✅ Group mood data reset for this chat!\n\n"
+                "🗑️ Cleared all stored reaction data\n"
+                "🔄 Fresh analysis will start from new reactions\n\n"
+                "Use `/groupmood` to see the current (empty) state."
             )
 
         except Exception as e:
