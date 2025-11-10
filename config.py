@@ -165,15 +165,17 @@ _config: Optional[BotConfig] = None
 
 def load_yaml_config() -> YamlConfig:
     """Load YAML configuration from config.yaml.
-    
+
     Returns:
         YamlConfig: Loaded YAML configuration with defaults
     """
     config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
-    
-    # Use defaults if file doesn't exist
+
+    # Use defaults if file doesn't exist (for testing/CI)
     if not os.path.exists(config_path):
-        raise FileNotFoundError(f"config.yaml not found at {config_path}")
+        import logging
+        logging.warning(f"config.yaml not found at {config_path}, using defaults")
+        return YamlConfig()
     
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
