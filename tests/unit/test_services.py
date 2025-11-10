@@ -37,8 +37,8 @@ class TestBotService:
 
         bot_service._register_handlers()
 
-        # Should have registered 2 handlers: 1 for text messages, 1 for reactions
-        assert mock_app.add_handler.call_count == 2
+        # Should have registered 3 handlers: 1 for text messages, 1 for reactions, 1 for help callbacks
+        assert mock_app.add_handler.call_count == 3
 
     @pytest.mark.asyncio
     async def test_shutdown(self, bot_service):
