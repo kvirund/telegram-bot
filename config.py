@@ -140,7 +140,7 @@ class BotConfig:
     max_retries: int = 3
     admin_user_ids: List[int] = field(default_factory=list)
     yaml_config: YamlConfig = field(default_factory=YamlConfig)
-    
+
     def __post_init__(self):
         """Validate configuration after initialization."""
         # Skip validation for testing/CI environments with dummy values
@@ -180,11 +180,11 @@ def load_yaml_config() -> YamlConfig:
         import logging
         logging.warning(f"config.yaml not found at {config_path}, using defaults")
         return YamlConfig()
-    
+
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
             yaml_data = yaml.safe_load(f) or {}
-        
+
         # Parse bot section
         bot_data = yaml_data.get('bot', {})
         bot = BotSettings(
@@ -192,13 +192,13 @@ def load_yaml_config() -> YamlConfig:
             bot_username=bot_data.get('bot_username', ''),
             admin_user_ids=bot_data.get('admin_user_ids', [])
         )
-        
+
         # Parse AI section
         ai_data = yaml_data.get('ai', {})
         groq_data = ai_data.get('groq', {})
         openrouter_data = ai_data.get('openrouter', {})
         local_data = ai_data.get('local', {})
-        
+
         ai = AISettings(
             provider=ai_data.get('provider', 'local'),
             context_messages_count=ai_data.get('context_messages_count', 10),
@@ -217,7 +217,7 @@ def load_yaml_config() -> YamlConfig:
                 model=local_data.get('model', 'llama2-uncensored')
             )
         )
-        
+
         # Parse autonomous_commenting section
         ac_data = yaml_data.get('autonomous_commenting', {})
         autonomous_commenting = AutonomousCommentingConfig(
@@ -236,7 +236,7 @@ def load_yaml_config() -> YamlConfig:
             avoid_sensitive_topics=ac_data.get('avoid_sensitive_topics', False),
             learn_from_reactions=ac_data.get('learn_from_reactions', True)
         )
-        
+
         # Parse user_profiling section
         up_data = yaml_data.get('user_profiling', {})
         user_profiling = UserProfilingConfig(
@@ -256,7 +256,7 @@ def load_yaml_config() -> YamlConfig:
             auto_save_interval_seconds=up_data.get('auto_save_interval_seconds', 300),
             cross_chat_profiling=up_data.get('cross_chat_profiling', True)
         )
-        
+
         # Parse conversation_monitoring section
         cm_data = yaml_data.get('conversation_monitoring', {})
         conversation_monitoring = ConversationMonitoringConfig(
@@ -264,7 +264,7 @@ def load_yaml_config() -> YamlConfig:
             language_detection=cm_data.get('language_detection', True),
             uncensored_mode=cm_data.get('uncensored_mode', True)
         )
-        
+
         # Parse reaction_system section
         rs_data = yaml_data.get('reaction_system', {})
         reaction_system = ReactionSystemConfig(
@@ -275,7 +275,7 @@ def load_yaml_config() -> YamlConfig:
             min_time_between_reactions_seconds=rs_data.get('min_time_between_reactions_seconds', 60),
             reaction_types=rs_data.get('reaction_types', ["👍", "😂", "🔥", "😱", "🤔", "👀", "💯", "🎯"])
         )
-        
+
         # Parse system_prompts section
         sp_data = yaml_data.get('system_prompts', {})
         system_prompts = SystemPromptsConfig(
@@ -285,10 +285,10 @@ def load_yaml_config() -> YamlConfig:
             ai_decision=sp_data.get('ai_decision', "You are a conversation analyst. Respond with YES or NO."),
             mention_response=sp_data.get('mention_response', "You are a straightforward, sarcastic bot. Respond directly to mentions.")
         )
-        
+
         # Parse excluded_chats
         excluded_chats = yaml_data.get('excluded_chats', [])
-        
+
         return YamlConfig(
             bot=bot,
             ai=ai,
@@ -372,7 +372,7 @@ def load_config() -> BotConfig:
 
 def get_config() -> BotConfig:
     """Get the singleton configuration instance.
-    
+
     Returns:
         BotConfig: The loaded configuration
     """
@@ -384,9 +384,9 @@ def get_config() -> BotConfig:
 
 def reload_config() -> BotConfig:
     """Reload configuration from files.
-    
+
     This forces a reload of config.yaml.
-    
+
     Returns:
         BotConfig: The newly loaded configuration
     """

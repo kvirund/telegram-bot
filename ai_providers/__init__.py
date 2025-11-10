@@ -27,7 +27,7 @@ def create_provider(
         ValueError: If provider_type is not supported
     """
     provider_type = provider_type.lower()
-    
+
     if provider_type == "groq":
         logger.info("Creating Groq provider")
         return GroqProvider(api_key=api_key, model=model)
