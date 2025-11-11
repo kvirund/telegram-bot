@@ -209,7 +209,7 @@ class ArgumentParser:
                 return value_str.lower() in ('true', '1', 'yes', 'on')
             elif arg_def.type == ArgumentType.CHOICE:
                 if value_str not in arg_def.choices:
-                    raise ValueError(f"Value must be one of: {', '.join(arg_def.choices)}")
+                    raise ValueError(f"Значение должно быть одним из: {', '.join(arg_def.choices)}")
                 return value_str
             elif arg_def.type == ArgumentType.FLAG:
                 return True  # Presence of flag means True
@@ -243,21 +243,21 @@ class ArgumentParser:
     def generate_help_text(self, language: str = "en") -> str:
         """Generate help text from argument definitions."""
         if not self.definitions:
-            return "No arguments required."
+            return "Аргументы не требуются."
 
         lines = []
         required_args = [arg for arg in self.definitions if arg.required]
         optional_args = [arg for arg in self.definitions if not arg.required]
 
         if required_args:
-            lines.append("Required arguments:")
+            lines.append("Обязательные аргументы:")
             for arg in required_args:
                 lines.append(self._format_argument_help(arg, language))
 
         if optional_args:
             if required_args:
                 lines.append("")
-            lines.append("Optional arguments:")
+            lines.append("Необязательные аргументы:")
             for arg in optional_args:
                 lines.append(self._format_argument_help(arg, language))
 
@@ -268,20 +268,20 @@ class ArgumentParser:
     def _format_argument_help(self, arg_def: ArgumentDefinition, language: str) -> str:
         """Format help text for a single argument."""
         name = arg_def.name
-        desc = arg_def.description or "No description"
+        desc = arg_def.description or "Описание отсутствует"
         range_text = ""
 
         if arg_def.type == ArgumentType.CHOICE:
-            choices_text = f" (choices: {', '.join(arg_def.choices)})"
+            choices_text = f" (варианты: {', '.join(arg_def.choices)})"
         elif arg_def.type in [ArgumentType.INTEGER, ArgumentType.FLOAT]:
             range_parts = []
             if arg_def.min_value is not None:
-                range_parts.append(f"min: {arg_def.min_value}")
+                range_parts.append(f"мин: {arg_def.min_value}")
             if arg_def.max_value is not None:
-                range_parts.append(f"max: {arg_def.max_value}")
+                range_parts.append(f"макс: {arg_def.max_value}")
             range_text = f" ({', '.join(range_parts)})" if range_parts else ""
 
-        default_text = f" [default: {arg_def.default}]" if arg_def.default is not None else ""
+        default_text = f" [по умолчанию: {arg_def.default}]" if arg_def.default is not None else ""
 
         return f"  {name}: {desc}{range_text}{default_text}"
 
