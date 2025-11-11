@@ -70,6 +70,17 @@ class Command(ABC):
         # Check if user is admin
         return user_id in getattr(config, "admin_user_ids", [])
 
+    def get_description(self, language: str = "en") -> str:
+        """Get command description in the specified language.
+
+        Args:
+            language: Language code ('en' or 'ru')
+
+        Returns:
+            str: Command description in the requested language
+        """
+        return self.description_ru if language == "ru" and self.description_ru else self.description
+
     def get_help_text(self, language: str = "en") -> str:
         """Get help text for this command.
 
