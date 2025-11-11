@@ -34,7 +34,8 @@ class ContextCommand(Command):
             name="context",
             description="Clear chat context (admin only)",
             admin_only=True,
-            arguments=arguments
+            arguments=arguments,
+            description_ru="Очистить контекст чата (только админ)"
         )
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -70,7 +71,7 @@ class ContextCommand(Command):
                 # Admin wants to clear specific chat
                 if user_id not in config.admin_user_ids:
                     await message.reply_text(
-                        "❌ Only administrators can clear context for other chats.",
+                        "❌ Только администраторы могут очищать контекст для других чатов.",
                         reply_to_message_id=message.message_id,
                     )
                     return
@@ -79,7 +80,7 @@ class ContextCommand(Command):
                     target_chat_id = int(parts[1].strip())
                 except ValueError:
                     await message.reply_text(
-                        "❌ Invalid chat ID. Usage: /context <chat_id>", reply_to_message_id=message.message_id
+                        "❌ Неверный ID чата. Использование: /context <chat_id>", reply_to_message_id=message.message_id
                     )
                     return
             else:
@@ -100,16 +101,16 @@ class ContextCommand(Command):
             logger.info(f"Context cleared for chat {target_chat_id} by user {user_id} ({message_count} messages)")
 
             await message.reply_text(
-                f"✅ Context cleared for chat `{target_chat_id}`\n"
-                f"📊 Removed {message_count} messages from history\n"
-                f"🔄 Autonomous commenter state reset",
+                f"✅ Контекст очищен для чата `{target_chat_id}`\n"
+                f"📊 Удалено {message_count} сообщений из истории\n"
+                f"🔄 Состояние автономного комментатора сброшено",
                 reply_to_message_id=message.message_id,
                 parse_mode="Markdown",
             )
 
         except Exception as e:
             logger.error(f"Error in /context command: {e}")
-            await message.reply_text(f"❌ Error: {str(e)}", reply_to_message_id=message.message_id)
+            await message.reply_text(f"❌ Ошибка: {str(e)}", reply_to_message_id=message.message_id)
 
 
 # Create and register the command instance

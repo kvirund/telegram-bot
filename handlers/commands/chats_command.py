@@ -18,7 +18,7 @@ class ChatsCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(name="chats", description="List all active chats (admin only)", admin_only=True)
+        super().__init__(name="chats", description="List all active chats (admin only)", admin_only=True, description_ru="Показать все активные чаты (только админ)")
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /chats command to list all chats where the bot is present.
@@ -43,7 +43,7 @@ class ChatsCommand(Command):
         # Check admin privilege
         if user_id not in config.admin_user_ids:
             await message.reply_text(
-                "❌ Only administrators can view chat list.", reply_to_message_id=message.message_id
+                "❌ Только администраторы могут просматривать список чатов.", reply_to_message_id=message.message_id
             )
             return
 
@@ -53,13 +53,13 @@ class ChatsCommand(Command):
 
             if not all_chats:
                 await message.reply_text(
-                    "📭 No active chats found.\n\nThe bot hasn't received messages in any chats yet.",
+                    "📭 Активные чаты не найдены.\n\nБот еще не получал сообщений ни в одном чате.",
                     reply_to_message_id=message.message_id,
                 )
                 return
 
             # Build response using HTML instead of Markdown for better compatibility
-            response = f"💬 <b>Active Chats</b> ({len(all_chats)})\n\n"
+            response = f"💬 <b>Активные чаты</b> ({len(all_chats)})\n\n"
 
             # Try to get chat information for each chat
             for chat_id in sorted(all_chats):
@@ -99,9 +99,9 @@ class ChatsCommand(Command):
                 except Exception as e:
                     # Chat might be inaccessible or bot was removed
                     logger.warning(f"Could not get info for chat {chat_id}: {e}")
-                    response += f"❓ <b>Unknown Chat</b>\n"
+                    response += f"❓ <b>Неизвестный чат</b>\n"
                     response += f"   • ID: <code>{chat_id}</code>\n"
-                    response += f"   • Status: Inaccessible\n\n"
+                    response += f"   • Статус: Недоступен\n\n"
 
             # Send response (might be long, so check length)
             if len(response) > 4000:
@@ -129,7 +129,7 @@ class ChatsCommand(Command):
 
         except Exception as e:
             logger.error(f"Error in /chats command: {e}")
-            await message.reply_text(f"❌ Error: {str(e)}", reply_to_message_id=message.message_id)
+            await message.reply_text(f"❌ Ошибка: {str(e)}", reply_to_message_id=message.message_id)
 
 
 # Create and register the command instance

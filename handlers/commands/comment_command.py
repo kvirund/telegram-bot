@@ -22,7 +22,7 @@ class CommentCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(name="comment", description="Force comment in chat (admin only)", admin_only=True)
+        super().__init__(name="comment", description="Force comment in chat (admin only)", admin_only=True, description_ru="Принудительно прокомментировать в чате (только админ)")
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /comment command to force an autonomous comment.
@@ -53,7 +53,7 @@ class CommentCommand(Command):
         if message.chat.type != "private":
             logger.warning(f"/comment command attempted in group chat {message.chat_id} by user {user_id}")
             await message.reply_text(
-                "❌ This command can only be used in private chat with the bot.", reply_to_message_id=message.message_id
+                "❌ Эта команда может использоваться только в приватном чате с ботом.", reply_to_message_id=message.message_id
             )
             return
 
@@ -61,7 +61,7 @@ class CommentCommand(Command):
         if user_id not in config.admin_user_ids:
             logger.warning(f"Unauthorized /comment attempt by user {user_id} (@{message.from_user.username})")
             await message.reply_text(
-                "❌ Unauthorized. Only bot administrators can use this command.", reply_to_message_id=message.message_id
+                "❌ Нет доступа. Только администраторы бота могут использовать эту команду.", reply_to_message_id=message.message_id
             )
             return
 
@@ -72,9 +72,9 @@ class CommentCommand(Command):
 
             if len(parts) < 2:
                 await message.reply_text(
-                    "Usage: /comment <chat_id>\n\n"
-                    "Forces the bot to generate an autonomous comment in the specified chat.\n"
-                    "Example: /comment -1001234567890",
+                    "Использование: /comment <chat_id>\n\n"
+                    "Принудительно заставляет бота сгенерировать автономный комментарий в указанном чате.\n"
+                    "Пример: /comment -1001234567890",
                     reply_to_message_id=message.message_id,
                 )
                 return
@@ -83,7 +83,7 @@ class CommentCommand(Command):
                 target_chat_id = int(parts[1].strip())
             except ValueError:
                 await message.reply_text(
-                    "❌ Invalid chat ID. Please provide a numeric chat ID.\n" "Example: /comment -1001234567890",
+                    "❌ Неверный ID чата. Пожалуйста, укажите числовой ID чата.\n" "Пример: /comment -1001234567890",
                     reply_to_message_id=message.message_id,
                 )
                 return
@@ -98,11 +98,11 @@ class CommentCommand(Command):
 
             if not comment:
                 await message.reply_text(
-                    f"❌ Failed to generate comment for chat {target_chat_id}.\n"
-                    "Possible reasons:\n"
-                    "- No message history available for this chat\n"
-                    "- Chat not found in history\n"
-                    "- AI generation failed",
+                    f"❌ Не удалось сгенерировать комментарий для чата {target_chat_id}.\n"
+                    "Возможные причины:\n"
+                    "- Нет истории сообщений для этого чата\n"
+                    "- Чат не найден в истории\n"
+                    "- Сбой генерации ИИ",
                     reply_to_message_id=message.message_id,
                 )
                 return
@@ -114,13 +114,13 @@ class CommentCommand(Command):
                         chat_id=target_chat_id, text=comment.text, reply_to_message_id=comment.reply_to_message_id
                     )
                     await message.reply_text(
-                        f"✅ Comment sent to chat {target_chat_id} as reply to message {comment.reply_to_message_id}",
+                        f"✅ Комментарий отправлен в чат {target_chat_id} в ответ на сообщение {comment.reply_to_message_id}",
                         reply_to_message_id=message.message_id,
                     )
                 else:
                     await context.bot.send_message(chat_id=target_chat_id, text=comment.text)
                     await message.reply_text(
-                        f"✅ Standalone comment sent to chat {target_chat_id}", reply_to_message_id=message.message_id
+                        f"✅ Отдельный комментарий отправлен в чат {target_chat_id}", reply_to_message_id=message.message_id
                     )
 
                 # Mark that we commented
@@ -137,14 +137,14 @@ class CommentCommand(Command):
             except Exception as e:
                 logger.error(f"Failed to send comment to chat {target_chat_id}: {e}")
                 await message.reply_text(
-                    f"❌ Failed to send comment to chat {target_chat_id}: {str(e)}\n"
-                    "The bot may not have access to this chat.",
+                    f"❌ Не удалось отправить комментарий в чат {target_chat_id}: {str(e)}\n"
+                    "Возможно, бот не имеет доступа к этому чату.",
                     reply_to_message_id=message.message_id,
                 )
 
         except Exception as e:
             logger.error(f"Error in /comment command: {e}")
-            await message.reply_text(f"❌ Error: {str(e)}", reply_to_message_id=message.message_id)
+            await message.reply_text(f"❌ Ошибка: {str(e)}", reply_to_message_id=message.message_id)
 
 
 # Create and register the command instance

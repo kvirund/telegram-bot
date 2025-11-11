@@ -240,13 +240,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 return
             else:
                 await message.reply_text(
-                    "❌ You don't have permission to use this command.", reply_to_message_id=message.message_id
+                    "❌ У вас нет прав для использования этой команды.", reply_to_message_id=message.message_id
                 )
                 return
         else:
             # Unknown command
             await message.reply_text(
-                f"❌ Unknown command: /{command_name}\n\nUse /help to see available commands.",
+                f"❌ Неизвестная команда: /{command_name}\n\nИспользуйте /help для просмотра доступных команд.",
                 reply_to_message_id=message.message_id,
             )
             return

@@ -19,17 +19,19 @@ class Command(ABC):
     Commands are automatically registered when instantiated.
     """
 
-    def __init__(self, name: str, description: str, admin_only: bool = False, arguments: Optional[List[ArgumentDefinition]] = None):
+    def __init__(self, name: str, description: str, admin_only: bool = False, arguments: Optional[List[ArgumentDefinition]] = None, description_ru: Optional[str] = None):
         """Initialize a command.
 
         Args:
             name: Command name without the leading slash (e.g., 'help', 'joke')
-            description: Short description for help and bot menu
+            description: Short description for help and bot menu (English)
             admin_only: Whether this command requires admin privileges
             arguments: List of formal argument definitions for this command
+            description_ru: Russian description (optional, defaults to English if not provided)
         """
         self.name = name
         self.description = description
+        self.description_ru = description_ru or description  # Fallback to English if no Russian provided
         self.admin_only = admin_only
         self.command_name = f"/{name}"
         self.arguments = arguments or []
@@ -105,7 +107,9 @@ class Command(ABC):
         Returns:
             str: Raw help text for this command
         """
-        help_text = f"{self.command_name} - {self.description}"
+        # Use appropriate language description
+        description = self.description_ru if language == "ru" else self.description
+        help_text = f"{self.command_name} - {description}"
 
         # Add argument help if arguments are defined
         if self.argument_parser:

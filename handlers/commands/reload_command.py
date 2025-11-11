@@ -18,7 +18,7 @@ class ReloadCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(name="reload", description="Reload configuration (admin only)", admin_only=True)
+        super().__init__(name="reload", description="Reload configuration (admin only)", admin_only=True, description_ru="Перезагрузить конфигурацию (только админ)")
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /reload command to reload configuration.
@@ -45,7 +45,7 @@ class ReloadCommand(Command):
         if message.chat.type != "private":
             logger.warning(f"/reload command attempted in group chat {message.chat_id} by user {user_id}")
             await message.reply_text(
-                "❌ This command can only be used in private chat with the bot.", reply_to_message_id=message.message_id
+                "❌ Эта команда может использоваться только в приватном чате с ботом.", reply_to_message_id=message.message_id
             )
             return
 
@@ -54,7 +54,7 @@ class ReloadCommand(Command):
         if user_id not in config.admin_user_ids:
             logger.warning(f"Unauthorized /reload attempt by user {user_id} (@{message.from_user.username})")
             await message.reply_text(
-                "❌ Unauthorized. Only bot administrators can reload configuration.",
+                "❌ Нет доступа. Только администраторы бота могут перезагрузить конфигурацию.",
                 reply_to_message_id=message.message_id,
             )
             return
@@ -87,17 +87,17 @@ class ReloadCommand(Command):
                 status = "ENABLED" if config.yaml_config.user_profiling.enabled else "DISABLED"
                 changes.append(f"User profiling: {status}")
 
-            response = "✅ Configuration reloaded successfully!\n\n"
+            response = "✅ Конфигурация успешно перезагружена!\n\n"
             if changes:
-                response += "Notable changes:\n" + "\n".join(f"- {change}" for change in changes)
+                response += "Значимые изменения:\n" + "\n".join(f"- {change}" for change in changes)
             else:
-                response += "No changes detected in configuration."
+                response += "Изменения в конфигурации не обнаружены."
 
-            response += f"\n\nCurrent settings:\n"
-            response += f"- Autonomous commenting: {'ENABLED' if config.yaml_config.autonomous_commenting.enabled else 'DISABLED'}\n"
-            response += f"- Roasting: {'ENABLED' if config.yaml_config.autonomous_commenting.roasting_enabled else 'DISABLED'}\n"
-            response += f"- Aggression: {config.yaml_config.autonomous_commenting.roasting_aggression}\n"
-            response += f"- User profiling: {'ENABLED' if config.yaml_config.user_profiling.enabled else 'DISABLED'}"
+            response += f"\n\nТекущие настройки:\n"
+            response += f"- Автономные комментарии: {'ВКЛЮЧЕНО' if config.yaml_config.autonomous_commenting.enabled else 'ОТКЛЮЧЕНО'}\n"
+            response += f"- Роастинг: {'ВКЛЮЧЕН' if config.yaml_config.autonomous_commenting.roasting_enabled else 'ОТКЛЮЧЕН'}\n"
+            response += f"- Агрессивность: {config.yaml_config.autonomous_commenting.roasting_aggression}\n"
+            response += f"- Профилирование пользователей: {'ВКЛЮЧЕНО' if config.yaml_config.user_profiling.enabled else 'ОТКЛЮЧЕНО'}"
 
             await message.reply_text(response, reply_to_message_id=message.message_id)
 
@@ -140,7 +140,7 @@ async def handle_reload_command(update: Update, context: ContextTypes.DEFAULT_TY
     if message.chat.type != "private":
         logger.warning(f"/reload command attempted in group chat {message.chat_id} by user {user_id}")
         await message.reply_text(
-            "❌ This command can only be used in private chat with the bot.", reply_to_message_id=message.message_id
+            "❌ Эта команда может использоваться только в приватном чате с ботом.", reply_to_message_id=message.message_id
         )
         return
 
@@ -149,7 +149,7 @@ async def handle_reload_command(update: Update, context: ContextTypes.DEFAULT_TY
     if user_id not in config.admin_user_ids:
         logger.warning(f"Unauthorized /reload attempt by user {user_id} (@{message.from_user.username})")
         await message.reply_text(
-            "❌ Unauthorized. Only bot administrators can reload configuration.", reply_to_message_id=message.message_id
+            "❌ Нет доступа. Только администраторы бота могут перезагрузить конфигурацию.", reply_to_message_id=message.message_id
         )
         return
 
@@ -181,19 +181,17 @@ async def handle_reload_command(update: Update, context: ContextTypes.DEFAULT_TY
             status = "ENABLED" if config.yaml_config.user_profiling.enabled else "DISABLED"
             changes.append(f"User profiling: {status}")
 
-        response = "✅ Configuration reloaded successfully!\n\n"
+        response = "✅ Конфигурация успешно перезагружена!\n\n"
         if changes:
-            response += "Notable changes:\n" + "\n".join(f"- {change}" for change in changes)
+            response += "Значимые изменения:\n" + "\n".join(f"- {change}" for change in changes)
         else:
-            response += "No changes detected in configuration."
+            response += "Изменения в конфигурации не обнаружены."
 
-        response += f"\n\nCurrent settings:\n"
-        response += f"- Autonomous commenting: {'ENABLED' if config.yaml_config.autonomous_commenting.enabled else 'DISABLED'}\n"
-        response += (
-            f"- Roasting: {'ENABLED' if config.yaml_config.autonomous_commenting.roasting_enabled else 'DISABLED'}\n"
-        )
-        response += f"- Aggression: {config.yaml_config.autonomous_commenting.roasting_aggression}\n"
-        response += f"- User profiling: {'ENABLED' if config.yaml_config.user_profiling.enabled else 'DISABLED'}"
+        response += f"\n\nТекущие настройки:\n"
+        response += f"- Автономные комментарии: {'ВКЛЮЧЕНО' if config.yaml_config.autonomous_commenting.enabled else 'ОТКЛЮЧЕНО'}\n"
+        response += f"- Роастинг: {'ВКЛЮЧЕН' if config.yaml_config.autonomous_commenting.roasting_enabled else 'ОТКЛЮЧЕН'}\n"
+        response += f"- Агрессивность: {config.yaml_config.autonomous_commenting.roasting_aggression}\n"
+        response += f"- Профилирование пользователей: {'ВКЛЮЧЕНО' if config.yaml_config.user_profiling.enabled else 'ОТКЛЮЧЕНО'}"
 
         await message.reply_text(response, reply_to_message_id=message.message_id)
 
@@ -201,4 +199,4 @@ async def handle_reload_command(update: Update, context: ContextTypes.DEFAULT_TY
 
     except Exception as e:
         logger.error(f"Error reloading configuration: {e}")
-        await message.reply_text(f"❌ Error reloading configuration: {str(e)}", reply_to_message_id=message.message_id)
+        await message.reply_text(f"❌ Ошибка перезагрузки конфигурации: {str(e)}", reply_to_message_id=message.message_id)

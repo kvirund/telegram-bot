@@ -47,7 +47,8 @@ class ProfilesRebuildCommand(Command):
             name="profiles_rebuild",
             description="Rebuild user profiles from message history",
             admin_only=True,
-            arguments=arguments
+            arguments=arguments,
+            description_ru="Перестроить профили пользователей из истории сообщений"
         )
 
     def _get_raw_help_text(self, language: str = "en") -> str:
@@ -93,7 +94,7 @@ class ProfilesRebuildCommand(Command):
 
         # Admin check
         if user_id not in config.admin_user_ids:
-            await message.reply_text("❌ Only administrators can rebuild user profiles.")
+            await message.reply_text("❌ Только администраторы могут перестраивать профили пользователей.")
             return
 
         try:
@@ -105,16 +106,16 @@ class ProfilesRebuildCommand(Command):
                 args = self.parse_arguments(args_text)
             except ArgumentParseError as e:
                 await message.reply_text(
-                    f"❌ Invalid arguments: {str(e)}\n\n"
-                    f"Usage: /profiles_rebuild <user>|all [context|N|full] <channel>|current|all\n"
-                    f"Example: /profiles_rebuild all full current"
+                    f"❌ Неверные аргументы: {str(e)}\n\n"
+                    f"Использование: /profiles_rebuild <user>|all [context|N|full] <channel>|current|all\n"
+                    f"Пример: /profiles_rebuild all full current"
                 )
                 return
 
             if not args or "user" not in args:
                 await message.reply_text(
-                    "❌ Invalid syntax. Use: /profiles_rebuild <user>|all [context|N|full] <channel>|current|all\n"
-                    "Example: /profiles_rebuild all full current"
+                    "❌ Неверный синтаксис. Используйте: /profiles_rebuild <user>|all [context|N|full] <channel>|current|all\n"
+                    "Пример: /profiles_rebuild all full current"
                 )
                 return
 
@@ -129,7 +130,7 @@ class ProfilesRebuildCommand(Command):
                 try:
                     target_user_ids = [int(target_user)]
                 except ValueError:
-                    await message.reply_text(f"❌ Invalid user ID: {target_user}")
+                    await message.reply_text(f"❌ Неверный ID пользователя: {target_user}")
                     return
 
             # Validate channel parameter
@@ -145,19 +146,19 @@ class ProfilesRebuildCommand(Command):
                     channel_filter = int(channel_param)
                     channel_description = f"channel {channel_filter}"
                 except ValueError:
-                    await message.reply_text(f"❌ Invalid channel parameter: {channel_param}. Use 'current', 'all', or a channel ID (e.g., -123456789).")
+                    await message.reply_text(f"❌ Неверный параметр канала: {channel_param}. Используйте 'current', 'all' или ID канала (например, -123456789).")
                     return
 
             # Validate source
             if source not in ["context", "N", "full"]:
-                await message.reply_text(f"❌ Invalid source: {source}. Use 'context', 'N', or 'full'.")
+                await message.reply_text(f"❌ Неверный источник: {source}. Используйте 'context', 'N' или 'full'.")
                 return
 
             await self._rebuild_profiles(target_user_ids, source, channel_filter, channel_param, channel_description, message)
 
         except Exception as e:
             logger.error(f"Error in profiles-rebuild command: {e}")
-            await message.reply_text("❌ Error rebuilding user profiles.")
+            await message.reply_text("❌ Ошибка перестройки профилей пользователей.")
 
     async def _rebuild_profiles(self, target_user_ids, source: str, channel_filter, channel_param, channel_description, message) -> None:
         """Rebuild user profiles using the specified parameters."""
@@ -221,7 +222,7 @@ class ProfilesRebuildCommand(Command):
                 target_user_ids = list(all_known_user_ids)
 
                 if not target_user_ids:
-                    await message.reply_text(f"❌ No users found in {channel_description}.")
+                    await message.reply_text(f"❌ Пользователи не найдены в {channel_description}.")
                     return
 
                 logger.info(f"Found {len(target_user_ids)} users to rebuild profiles for")

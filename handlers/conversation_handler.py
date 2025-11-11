@@ -161,5 +161,5 @@ async def handle_private_conversation(update: Update, context: ContextTypes.DEFA
     except Exception as e:
         logger.error(f"Error in private conversation: {e}")
         await message.reply_text(
-            "Sorry, I encountered an error. Please try again.", reply_to_message_id=message.message_id
+            "Извините, произошла ошибка. Попробуйте еще раз.", reply_to_message_id=message.message_id
         )

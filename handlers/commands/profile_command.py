@@ -25,7 +25,7 @@ class ProfileCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(name="profile", description="Show user profile (admin only)", admin_only=True)
+        super().__init__(name="profile", description="Show user profile (admin only)", admin_only=True, description_ru="Показать профиль пользователя (только админ)")
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /profile command to show user profile.
@@ -55,7 +55,7 @@ class ProfileCommand(Command):
         # Check admin privilege
         if user_id not in config.admin_user_ids:
             await message.reply_text(
-                "❌ Only administrators can view user profiles.", reply_to_message_id=message.message_id
+                "❌ Только администраторы могут просматривать профили пользователей.", reply_to_message_id=message.message_id
             )
             return
 
@@ -66,11 +66,11 @@ class ProfileCommand(Command):
 
             if len(parts) < 2:
                 await message.reply_text(
-                    "Usage: /profile <user>\n\n"
-                    "Examples:\n"
+                    "Использование: /profile <пользователь>\n\n"
+                    "Примеры:\n"
                     "• /profile @username\n"
                     "• /profile 123456789\n"
-                    "• /profile John",
+                    "• /profile Иван",
                     reply_to_message_id=message.message_id,
                 )
                 return
@@ -135,7 +135,7 @@ class ProfileCommand(Command):
 
             if not profile or profile.user_id == 0:
                 await message.reply_text(
-                    f"❌ No profile found for: {search_term}", reply_to_message_id=message.message_id
+                    f"❌ Профиль не найден для: {search_term}", reply_to_message_id=message.message_id
                 )
                 return
 
@@ -158,7 +158,7 @@ class ProfileCommand(Command):
 
         except Exception as e:
             logger.error(f"Error in /profile command: {e}")
-            await message.reply_text(f"❌ Error: {str(e)}", reply_to_message_id=message.message_id)
+            await message.reply_text(f"❌ Ошибка: {str(e)}", reply_to_message_id=message.message_id)
 
 
 # Create and register the command instance

@@ -33,7 +33,8 @@ class AskCommand(Command):
             name="ask",
             description="Send a free-form request to AI",
             admin_only=False,
-            arguments=arguments
+            arguments=arguments,
+            description_ru="Отправить свободный запрос к ИИ"
         )
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

@@ -84,7 +84,7 @@ class GroupMoodRebuildCommand(Command):
 
         # Admin check
         if user_id not in config.admin_user_ids:
-            await message.reply_text("❌ Only administrators can rebuild group mood data.")
+            await message.reply_text("❌ Только администраторы могут перестраивать данные настроения группы.")
             return
 
         try:
@@ -96,16 +96,16 @@ class GroupMoodRebuildCommand(Command):
                 args = self.parse_arguments(args_text)
             except ArgumentParseError as e:
                 await message.reply_text(
-                    f"❌ Invalid arguments: {str(e)}\n\n"
-                    f"Usage: /groupmood_rebuild <channel>|all [context|N|full]\n"
-                    f"Example: /groupmood_rebuild -123456789 full"
+                    f"❌ Неверные аргументы: {str(e)}\n\n"
+                    f"Использование: /groupmood_rebuild <channel>|all [context|N|full]\n"
+                    f"Пример: /groupmood_rebuild -123456789 full"
                 )
                 return
 
             if not args or "target" not in args:
                 await message.reply_text(
-                    "❌ Invalid syntax. Use: /groupmood_rebuild <channel>|all [context|N|full]\n"
-                    "Example: /groupmood_rebuild -123456789 full"
+                    "❌ Неверный синтаксис. Используйте: /groupmood_rebuild <channel>|all [context|N|full]\n"
+                    "Пример: /groupmood_rebuild -123456789 full"
                 )
                 return
 
@@ -119,7 +119,7 @@ class GroupMoodRebuildCommand(Command):
                 try:
                     target_chat_ids = [int(target)]
                 except ValueError:
-                    await message.reply_text(f"❌ Invalid channel ID: {target}")
+                    await message.reply_text(f"❌ Неверный ID канала: {target}")
                     return
 
             # Validate source

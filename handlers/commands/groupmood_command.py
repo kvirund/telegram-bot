@@ -20,7 +20,8 @@ class GroupMoodCommand(Command):
         super().__init__(
             name="groupmood",
             description="Show current group sentiment analysis",
-            admin_only=False
+            admin_only=False,
+            description_ru="Показать текущий анализ настроения группы"
         )
 
     def _get_raw_help_text(self, language: str = "en") -> str:
@@ -59,21 +60,21 @@ class GroupMoodCommand(Command):
             await self._show_group_mood(chat_id, message)
         except Exception as e:
             logger.error(f"Error in groupmood command: {e}")
-            await message.reply_text("❌ Error analyzing group mood.")
+            await message.reply_text("❌ Ошибка анализа настроения группы.")
 
     async def _show_group_mood(self, chat_id: int, message) -> None:
         """Show current group mood analysis."""
         # Get group mood analysis
         mood_data = reaction_analytics.get_group_mood(chat_id)
 
-        mood_message = "😊 Group Mood Analysis\n\n"
-        mood_message += f"📍 Current Mood: {mood_data['overall_mood'].title()}\n\n"
-        mood_message += "📊 Sentiment Distribution:\n"
-        mood_message += f"😀 Positive: {mood_data['positive_percentage']}%\n"
-        mood_message += f"😐 Neutral: {mood_data['neutral_percentage']}%\n"
-        mood_message += f"😞 Negative: {mood_data['negative_percentage']}%\n\n"
-        mood_message += f"👥 Active Users: {mood_data['active_users']}\n"
-        mood_message += f"💬 Recent Reactions: {mood_data['recent_reactions']}\n\n"
+        mood_message = "😊 Анализ настроения группы\n\n"
+        mood_message += f"📍 Текущее настроение: {mood_data['overall_mood'].title()}\n\n"
+        mood_message += "📊 Распределение настроений:\n"
+        mood_message += f"😀 Положительное: {mood_data['positive_percentage']}%\n"
+        mood_message += f"😐 Нейтральное: {mood_data['neutral_percentage']}%\n"
+        mood_message += f"😞 Отрицательное: {mood_data['negative_percentage']}%\n\n"
+        mood_message += f"👥 Активные пользователи: {mood_data['active_users']}\n"
+        mood_message += f"💬 Недавние реакции: {mood_data['recent_reactions']}\n\n"
         mood_message += f"💡 {mood_data['message']}"
 
         await message.reply_text(mood_message)

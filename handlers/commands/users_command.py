@@ -25,7 +25,8 @@ class UsersCommand(Command):
         super().__init__(
             name="users",
             description="List all users known to the bot (admin only)",
-            admin_only=True
+            admin_only=True,
+            description_ru="Показать всех известных боту пользователей (только админ)"
         )
 
     def _get_raw_help_text(self, language: str = "en") -> str:
@@ -42,11 +43,11 @@ class UsersCommand(Command):
 
         # Admin check (additional safety check)
         if user_id not in config.admin_user_ids:
-            await message.reply_text("❌ Only administrators can list users.")
+            await message.reply_text("❌ Только администраторы могут просматривать список пользователей.")
             return
 
         try:
-            await message.reply_text("🔍 Discovering users from message history and profiles...")
+            await message.reply_text("🔍 Поиск пользователей в истории сообщений и профилях...")
 
             # Discover users from different sources
             history_users = self._discover_users_from_history()
@@ -64,17 +65,17 @@ class UsersCommand(Command):
                 chunks = self._split_message(response, 3500)
                 for i, chunk in enumerate(chunks):
                     if i == 0:
-                        await message.reply_text(f"👥 Users known to bot:\n\n{chunk}")
+                        await message.reply_text(f"👥 Известные боту пользователи:\n\n{chunk}")
                     else:
                         await message.reply_text(chunk)
             else:
-                await message.reply_text(f"👥 Users known to bot:\n\n{response}")
+                await message.reply_text(f"👥 Известные боту пользователи:\n\n{response}")
 
             logger.info(f"Listed {len(all_users)} users for admin {user_id}")
 
         except Exception as e:
             logger.error(f"Error in users command: {e}")
-            await message.reply_text("❌ Error retrieving user list.")
+            await message.reply_text("❌ Ошибка при получении списка пользователей.")
 
     def _discover_users_from_history(self) -> Dict[int, Dict]:
         """Discover users from message history.
@@ -206,7 +207,7 @@ class UsersCommand(Command):
             Formatted string listing all users
         """
         if not users:
-            return "No users found."
+            return "Пользователи не найдены."
 
         # Sort users by ID for consistent output
         sorted_users = sorted(users.items(), key=lambda x: x[0])

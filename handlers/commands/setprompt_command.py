@@ -44,7 +44,8 @@ class SetPromptCommand(Command):
             name="setprompt",
             description="Modify system prompts (admin only)",
             admin_only=True,
-            arguments=arguments
+            arguments=arguments,
+            description_ru="Изменить системные промпты (только админ)"
         )
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -77,7 +78,7 @@ class SetPromptCommand(Command):
         if message.chat.type != "private":
             logger.warning(f"/setprompt command attempted in group chat {message.chat_id} by user {user_id}")
             await message.reply_text(
-                "[X] This command can only be used in private chat with the bot.",
+                "[X] Эта команда может использоваться только в приватном чате с ботом.",
                 reply_to_message_id=message.message_id,
             )
             return
@@ -86,7 +87,7 @@ class SetPromptCommand(Command):
         if user_id not in config.admin_user_ids:
             logger.warning(f"Unauthorized /setprompt attempt by user {user_id}")
             await message.reply_text(
-                "[X] Only administrators can modify system prompts.", reply_to_message_id=message.message_id
+                "[X] Только администраторы могут изменять системные промпты.", reply_to_message_id=message.message_id
             )
             return
 
@@ -112,7 +113,7 @@ class SetPromptCommand(Command):
 
             if len(parts) < 3:
                 await message.reply_text(
-                    "[X] Missing prompt text.\n" "Usage: /setprompt <type> <new_prompt>",
+                    "[X] Отсутствует текст промпта.\n" "Использование: /setprompt <type> <new_prompt>",
                     reply_to_message_id=message.message_id,
                 )
                 return
@@ -124,7 +125,7 @@ class SetPromptCommand(Command):
             valid_types = ["joke_generation", "conversation", "autonomous_comment", "ai_decision", "mention_response"]
             if prompt_type not in valid_types:
                 await message.reply_text(
-                    f"[X] Invalid prompt type: {prompt_type}\n" f"Valid types: {', '.join(valid_types)}",
+                    f"[X] Неверный тип промпта: {prompt_type}\n" f"Допустимые типы: {', '.join(valid_types)}",
                     reply_to_message_id=message.message_id,
                 )
                 return
@@ -149,14 +150,14 @@ class SetPromptCommand(Command):
             logger.info(f"Prompt '{prompt_type}' updated by admin {user_id}")
 
             await message.reply_text(
-                f"[OK] Prompt '{prompt_type}' updated successfully!\n\n"
-                f"New prompt (first 200 chars):\n{new_prompt[:200]}{'...' if len(new_prompt) > 200 else ''}",
+                f"[OK] Промпт '{prompt_type}' успешно обновлен!\n\n"
+                f"Новый промпт (первые 200 символов):\n{new_prompt[:200]}{'...' if len(new_prompt) > 200 else ''}",
                 reply_to_message_id=message.message_id,
             )
 
         except Exception as e:
             logger.error(f"Error in /setprompt command: {e}")
-            await message.reply_text(f"[X] Error: {str(e)}", reply_to_message_id=message.message_id)
+            await message.reply_text(f"[X] Ошибка: {str(e)}", reply_to_message_id=message.message_id)
 
 
 # Create and register the command instance

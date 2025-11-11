@@ -25,7 +25,7 @@ class HelpCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(name="help", description="Show interactive help with available commands", admin_only=False)
+        super().__init__(name="help", description="Show interactive help with available commands", admin_only=False, description_ru="Показать интерактивную справку с доступными командами")
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /help command - show interactive help menu.
