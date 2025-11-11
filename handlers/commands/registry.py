@@ -81,13 +81,16 @@ class CommandRegistry:
         """
         return [cmd for cmd in self._commands.values() if not cmd.admin_only]
 
-    def get_bot_commands(self) -> List[BotCommand]:
+    def get_bot_commands(self, language: str = "en") -> List[BotCommand]:
         """Get Telegram BotCommand objects for all commands.
+
+        Args:
+            language: Language for command descriptions ('en' or 'ru')
 
         Returns:
             List of BotCommand objects for Telegram API
         """
-        return [BotCommand(cmd.name, cmd.description) for cmd in self._commands.values()]
+        return [BotCommand(cmd.name, cmd.get_description(language)) for cmd in self._commands.values()]
 
     def get_command_names(self) -> List[str]:
         """Get list of all command names with leading slashes.

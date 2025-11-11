@@ -70,8 +70,8 @@ class BotService:
         # Import registry to get commands
         from handlers.commands import command_registry
 
-        # Get bot commands from registry
-        commands = command_registry.get_bot_commands()
+        # Get bot commands from registry (use English for global bot commands)
+        commands = command_registry.get_bot_commands(language="en")
 
         try:
             await self.app.bot.set_my_commands(commands)

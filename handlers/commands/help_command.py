@@ -175,10 +175,12 @@ class HelpCommand(Command):
 
         if category == "public":
             commands = [cmd for cmd in available_commands if not cmd.admin_only]
-            title = self._get_text("📋 Public Commands", "📋 Публичные команды", language)
+            title = self._get_text("Public Commands", "Публичные команды", language)
+            title_emoji = "📋"
         else:
             commands = [cmd for cmd in available_commands if cmd.admin_only]
-            title = self._get_text("🔐 Admin Commands", "🔐 Команды администратора", language)
+            title = self._get_text("Admin Commands", "Команды администратора", language)
+            title_emoji = "🔐"
 
         # Create keyboard with command buttons
         keyboard = []
@@ -198,7 +200,7 @@ class HelpCommand(Command):
             callback_data=f"help_back_main_{language}"
         )])
 
-        text = f"<b>{title}</b>\n\n"
+        text = f"<b>{title_emoji} {title}</b>\n\n"
         text += self._get_text(
             "Click on a command to see detailed help:",
             "Нажмите на команду для подробной справки:",
