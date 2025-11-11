@@ -8,7 +8,7 @@ from utils.context_extractor import message_history
 from utils.profile_manager import profile_manager
 from ai_providers import create_provider
 from .base import Command
-from .arguments import ArgumentDefinition, ArgumentType
+from .arguments import ArgumentDefinition, ArgumentType, ArgumentParseError
 
 logger = logging.getLogger(__name__)
 config = get_config()
@@ -27,7 +27,7 @@ class ProfilesRebuildCommand(Command):
                 name="user",
                 type=ArgumentType.STRING,
                 required=True,
-                description="User ID or 'all' for all existing profiles. Example: 123456789 or all"
+                description="User ID or 'all' for all known users from message history. Example: 123456789 or all"
             ),
             ArgumentDefinition(
                 name="source",
@@ -39,40 +39,42 @@ class ProfilesRebuildCommand(Command):
             ArgumentDefinition(
                 name="channel",
                 type=ArgumentType.STRING,
-                required=False,
-                description="Optional channel ID to limit data source. Example: -123456789"
+                required=True,
+                description="'current' (current channel only), 'all' (all channels bot is in), or channel ID (e.g., -123456789)"
             )
         ]
         super().__init__(
-            name="profiles-rebuild",
+            name="profiles_rebuild",
             description="Rebuild user profiles from message history",
             admin_only=True,
             arguments=arguments
         )
 
-    def get_help_text(self, language: str = "en") -> str:
-        """Get help text for the profiles-rebuild command."""
+    def _get_raw_help_text(self, language: str = "en") -> str:
+        """Get raw help text for the profiles_rebuild command."""
         help_lines = [
             f"{self.command_name} - {self.description}",
             "",
             "USAGE:",
-            "/profiles-rebuild <user>|all [context|N|full] [<channel>]",
+            "/profiles_rebuild <user>|all [context|N|full] <channel>",
             "",
             "PARAMETERS:",
-            "<user>|all      : User ID (e.g., 123456789) or 'all' for all existing profiles",
+            "<user>|all      : User ID (e.g., 123456789) or 'all' for all known users from message history",
             "[context|N|full]: Data source (optional, default: context)",
             "                  - context: Use current stored context messages",
             "                  - N: Use last N messages from Telegram API",
             "                  - full: Use full chat history from Telegram API",
-            "[<channel>]     : Optional channel ID to limit data source",
+            "<channel>       : Channel scope (required)",
+            "                  - current: Use only current channel history",
+            "                  - all: Use history from all channels bot is in",
+            "                  - <channel_id>: Use specific channel (e.g., -123456789)",
             "",
             "EXAMPLES:",
-            "/profiles-rebuild 123456789              # Rebuild specific user using context",
-            "/profiles-rebuild all full               # Rebuild all profiles using full history",
-            "/profiles-rebuild all N -123456789       # Rebuild all profiles using last N messages from specific channel",
-            "/profiles-rebuild 123456789 context      # Rebuild user using context messages",
+            "/profiles_rebuild 123456789 context current    # Rebuild user using current channel context",
+            "/profiles_rebuild all full all                 # Rebuild ALL KNOWN users using full history from ALL channels",
+            "/profiles_rebuild all N -123456789             # Rebuild all users from specific channel using last N messages",
             "",
-            "NOTE: 'all' rebuilds only users who already have profiles. Uses batching for performance."
+            "NOTE: 'all' discovers all users from message history and rebuilds their profiles. Uses batching for performance."
         ]
 
         return "\n".join(help_lines)
@@ -95,19 +97,30 @@ class ProfilesRebuildCommand(Command):
             return
 
         try:
-            # Parse arguments
-            args = self.parse_arguments(message.text)
+            # Parse arguments - strip command name from message text
+            command_text = message.text.strip()
+            args_text = command_text.replace(self.command_name, '', 1).strip()
+
+            try:
+                args = self.parse_arguments(args_text)
+            except ArgumentParseError as e:
+                await message.reply_text(
+                    f"❌ Invalid arguments: {str(e)}\n\n"
+                    f"Usage: /profiles_rebuild <user>|all [context|N|full] <channel>\n"
+                    f"Example: /profiles_rebuild all full current"
+                )
+                return
 
             if not args or "user" not in args:
                 await message.reply_text(
-                    "❌ Invalid syntax. Use: /profiles-rebuild <user>|all [context|N|full] [<channel>]\n"
-                    "Example: /profiles-rebuild all full -123456789"
+                    "❌ Invalid syntax. Use: /profiles_rebuild <user>|all [context|N|full] <channel>\n"
+                    "Example: /profiles_rebuild all full current"
                 )
                 return
 
             target_user = args["user"]
             source = args.get("source", "context")
-            channel_filter = args.get("channel")
+            channel_param = args["channel"]
 
             # Validate user target
             if target_user == "all":
@@ -119,12 +132,20 @@ class ProfilesRebuildCommand(Command):
                     await message.reply_text(f"❌ Invalid user ID: {target_user}")
                     return
 
-            # Validate channel filter if provided
-            if channel_filter:
+            # Validate channel parameter
+            if channel_param == "current":
+                channel_filter = message.chat_id  # Use current channel
+                channel_description = "current channel"
+            elif channel_param == "all":
+                channel_filter = None  # Use all channels
+                channel_description = "all channels"
+            else:
+                # Try to parse as channel ID
                 try:
-                    channel_filter = int(channel_filter)
+                    channel_filter = int(channel_param)
+                    channel_description = f"channel {channel_filter}"
                 except ValueError:
-                    await message.reply_text(f"❌ Invalid channel ID: {channel_filter}")
+                    await message.reply_text(f"❌ Invalid channel parameter: {channel_param}. Use 'current', 'all', or a channel ID (e.g., -123456789).")
                     return
 
             # Validate source
@@ -132,13 +153,13 @@ class ProfilesRebuildCommand(Command):
                 await message.reply_text(f"❌ Invalid source: {source}. Use 'context', 'N', or 'full'.")
                 return
 
-            await self._rebuild_profiles(target_user_ids, source, channel_filter, message)
+            await self._rebuild_profiles(target_user_ids, source, channel_filter, channel_param, channel_description, message)
 
         except Exception as e:
             logger.error(f"Error in profiles-rebuild command: {e}")
             await message.reply_text("❌ Error rebuilding user profiles.")
 
-    async def _rebuild_profiles(self, target_user_ids, source: str, channel_filter, message) -> None:
+    async def _rebuild_profiles(self, target_user_ids, source: str, channel_filter, channel_param, channel_description, message) -> None:
         """Rebuild user profiles using the specified parameters."""
         try:
             # Get AI provider for profile enrichment
@@ -150,29 +171,60 @@ class ProfilesRebuildCommand(Command):
             )
 
             if target_user_ids is None:
-                # Rebuild all existing profiles
+                # Rebuild all known users (from message history)
                 await message.reply_text(
-                    f"🔄 Starting profile rebuild for ALL users using {source} data...\n\n"
+                    f"🔄 Starting profile rebuild for ALL KNOWN users using {source} data from {channel_description}...\n\n"
                     "This may take several minutes depending on the number of users and data size."
                 )
 
-                # Get all user IDs that have existing profiles
-                import os
-                users_dir = os.path.join(profile_manager.profile_directory, "users")
-                all_user_ids = []
-                if os.path.exists(users_dir):
-                    for filename in os.listdir(users_dir):
-                        if filename.startswith("user_") and filename.endswith(".json"):
-                            try:
-                                user_id_str = filename.replace("user_", "").replace(".json", "")
-                                all_user_ids.append(int(user_id_str))
-                            except ValueError:
-                                continue
-                target_user_ids = all_user_ids
+                # Get all user IDs from message history
+                all_known_user_ids = set()
+
+                # For "full" source, get actual channel participants via Telegram API
+                # For "context" source, scan stored message history
+                if source == "full":
+                    # For full rebuilds, we need to get actual channel participants
+                    # This requires bot instance and API calls - for now, fall back to message history scanning
+                    # TODO: Implement proper Telegram API participant fetching
+                    logger.info("Full rebuild requested - scanning message history for user discovery")
+                    pass
+
+                # Scan message history to find all users
+                if channel_param == "current":
+                    # Only scan current channel
+                    chat_ids_to_scan = [message.chat_id]
+                elif channel_param == "all":
+                    # Scan all channels
+                    chat_ids_to_scan = message_history.get_all_chat_ids()
+                    logger.info(f"Found {len(chat_ids_to_scan)} chats to scan: {chat_ids_to_scan}")
+                else:
+                    # Scan specific channel
+                    chat_ids_to_scan = [int(channel_param)]
+
+                for chat_id in chat_ids_to_scan:
+                    try:
+                        # Get recent messages to find users
+                        recent_messages = message_history.get_recent_messages(chat_id, limit=1000) or []
+                        logger.info(f"Scanning chat {chat_id}: found {len(recent_messages)} messages")
+                        if recent_messages:
+                            logger.info(f"Sample message from chat {chat_id}: {recent_messages[0]}")
+                        for msg in recent_messages:
+                            user_id = msg.get("user_id")
+                            if user_id and user_id != 0:  # Skip invalid user IDs
+                                all_known_user_ids.add(user_id)
+                                logger.debug(f"Found user {user_id} in chat {chat_id}")
+                    except Exception as e:
+                        logger.warning(f"Failed to scan chat {chat_id} for users: {e}")
+                        import traceback
+                        logger.warning(f"Traceback: {traceback.format_exc()}")
+
+                target_user_ids = list(all_known_user_ids)
 
                 if not target_user_ids:
-                    await message.reply_text("❌ No users found with existing profiles.")
+                    await message.reply_text(f"❌ No users found in {channel_description}.")
                     return
+
+                logger.info(f"Found {len(target_user_ids)} users to rebuild profiles for")
             else:
                 # Rebuild specific user
                 user_id = target_user_ids[0]
@@ -181,86 +233,67 @@ class ProfilesRebuildCommand(Command):
                     f"🔄 Starting profile rebuild for user {user_id} using {source} data{channel_desc}..."
                 )
 
-            # Determine message source based on rebuild_mode
+            # For profile rebuilding, we process each user individually
+            # The source parameter determines how many messages to use per user
             if source == "full":
-                source_description = "full chat history"
-                if channel_filter:
-                    all_messages = message_history.get_all_messages_for_chat(channel_filter) or []
-                else:
-                    # For full rebuild without channel filter, we'd need to aggregate from all chats
-                    # This is complex, so for now we'll use context as fallback
-                    all_messages = []
-                    for user_id in target_user_ids:
-                        user_messages = message_history.get_recent_messages_for_user(user_id) or []
-                        all_messages.extend(user_messages)
-                    source_description = "available message history (channel filter not supported for 'full' mode)"
+                source_description = "full message history"
+                messages_per_user = 100  # Use up to 100 messages per user
             elif source == "N":
                 source_description = "last N messages from history"
-                # Use N messages from history (configurable, defaulting to 100)
-                n_messages = getattr(config, 'rebuild_n_messages', 100)
-                if channel_filter:
-                    all_messages = message_history.get_recent_messages(channel_filter, limit=n_messages) or []
-                else:
-                    all_messages = []
-                    for user_id in target_user_ids:
-                        user_messages = message_history.get_recent_messages_for_user(user_id, limit=n_messages) or []
-                        all_messages.extend(user_messages)
+                messages_per_user = getattr(config, 'rebuild_n_messages', 50)
             else:  # context
                 source_description = "current context messages"
-                all_messages = []
-                for user_id in target_user_ids:
-                    user_messages = message_history.get_recent_messages_for_user(user_id) or []
-                    all_messages.extend(user_messages)
-
-            if not all_messages:
-                await message.reply_text(f"❌ No {source_description} available for the specified users.")
-                return
+                messages_per_user = 30  # Use recent context messages
 
             await message.reply_text(
-                f"🔄 Processing {len(all_messages)} messages for profile rebuild...\n\n"
+                f"🔄 Processing profiles for rebuild...\n\n"
                 f"📊 Data Source: {source_description}\n"
-                f"👥 Target Users: {len(target_user_ids)}"
+                f"👥 Target Users: {len(target_user_ids) if target_user_ids else 'all'}"
             )
 
-            # Group messages by user
-            messages_by_user = {}
-            for msg in all_messages:
-                user_id = msg.get("from", {}).get("id")
-                if user_id and (not target_user_ids or user_id in target_user_ids):
-                    if user_id not in messages_by_user:
-                        messages_by_user[user_id] = []
-                    messages_by_user[user_id].append(msg)
-
             # Rebuild profiles for each user in batches
-            batch_size = 5  # Process 5 users at a time
+            batch_size = 3  # Process 3 users at a time (AI calls are expensive)
             total_processed = 0
             successful_rebuilds = 0
+            total_messages_processed = 0
 
-            user_ids_list = list(messages_by_user.keys())
-
-            for i in range(0, len(user_ids_list), batch_size):
-                batch_user_ids = user_ids_list[i:i + batch_size]
+            for i in range(0, len(target_user_ids), batch_size):
+                batch_user_ids = target_user_ids[i:i + batch_size]
 
                 for user_id in batch_user_ids:
                     try:
-                        user_messages = messages_by_user[user_id]
+                        # Get user's message history
+                        if channel_filter:
+                            # Get messages from specific channel only
+                            user_messages = message_history.get_user_messages(channel_filter, user_id, messages_per_user)
+                            # For single channel, estimate message count
+                            user_messages_count = len(user_messages.split('\n')) if user_messages else 0
+                        else:
+                            # Get messages from all chats the user has participated in
+                            # Since get_user_messages works per chat, we need to aggregate
+                            user_chats = message_history.get_all_chat_ids()
+                            all_user_messages = []
+                            messages_count = 0
+                            for chat_id in user_chats:
+                                chat_messages = message_history.get_user_messages(chat_id, user_id, messages_per_user // len(user_chats) + 1)
+                                if chat_messages:
+                                    all_user_messages.append(chat_messages)
+                                    # Count messages (rough estimate: split by newlines and filter empty)
+                                    messages_count += len([msg for msg in chat_messages.split('\n') if msg.strip()])
+                            user_messages = "\n".join(all_user_messages)
+                            # Use the counted messages for this user
+                            user_messages_count = messages_count
 
-                        # Convert messages to text for AI analysis
-                        message_texts = []
-                        for msg in user_messages[-50:]:  # Limit to last 50 messages per user for AI processing
-                            if "text" in msg and msg["text"]:
-                                sender_name = msg.get("from", {}).get("first_name", "User")
-                                message_texts.append(f"{sender_name}: {msg['text']}")
-
-                        if message_texts:
-                            message_history_text = "\n".join(message_texts)
-
+                        if user_messages and len(user_messages.strip()) > 10:  # Ensure we have meaningful content
                             # Enrich profile with AI
                             await profile_manager.enrich_profile_with_ai(
-                                user_id=user_id, recent_messages=message_history_text, ai_analyzer=ai_provider
+                                user_id=user_id, recent_messages=user_messages, ai_analyzer=ai_provider
                             )
-
                             successful_rebuilds += 1
+                            total_messages_processed += user_messages_count
+                            logger.info(f"Successfully rebuilt profile for user {user_id} using {user_messages_count} messages")
+                        else:
+                            logger.warning(f"No sufficient message history found for user {user_id}")
 
                         total_processed += 1
 
@@ -269,8 +302,8 @@ class ProfilesRebuildCommand(Command):
                         total_processed += 1
 
                 # Progress update for large batches
-                if len(user_ids_list) > batch_size:
-                    progress = (i + len(batch_user_ids)) / len(user_ids_list) * 100
+                if len(target_user_ids) > batch_size:
+                    progress = (i + len(batch_user_ids)) / len(target_user_ids) * 100
                     await message.reply_text(
                         f"📊 Progress: {progress:.1f}% complete\n"
                         f"✅ {successful_rebuilds}/{total_processed} profiles rebuilt successfully"
@@ -292,10 +325,11 @@ class ProfilesRebuildCommand(Command):
                 f"👥 Target: {target_desc}{channel_desc}\n"
                 f"📊 Data Source: {source_description}\n"
                 f"✅ Successful: {successful_rebuilds}/{total_processed} profiles\n"
+                f"💬 Messages Processed: {total_messages_processed}\n"
                 f"💾 All profile data saved to disk"
             )
 
-            logger.info(f"Rebuilt {successful_rebuilds}/{total_processed} profiles using {source_description}")
+            logger.info(f"Rebuilt {successful_rebuilds}/{total_processed} profiles using {source_description}, processed {total_messages_processed} messages")
 
         except Exception as e:
             logger.error(f"Error rebuilding profiles: {e}")
