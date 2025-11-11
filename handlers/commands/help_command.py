@@ -185,8 +185,10 @@ class HelpCommand(Command):
         for cmd in sorted(commands, key=lambda x: x.name):
             # Button text should be plain text (no HTML parsing)
             # Use a separator that's not in command names (pipe |) to avoid conflicts with underscores
+            # Use appropriate description based on language
+            description = cmd.description_ru if language == "ru" and cmd.description_ru else cmd.description
             keyboard.append([InlineKeyboardButton(
-                f"{cmd.command_name} - {cmd.description}",
+                f"{cmd.command_name} - {description}",
                 callback_data=f"help_cmd|{cmd.name}|{language}"
             )])
 
