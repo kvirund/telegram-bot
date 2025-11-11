@@ -29,21 +29,14 @@ class GroupMoodRebuildCommand(Command):
                 type=ArgumentType.STRING,
                 required=True,
                 description="Channel ID or 'all' for all channels. Example: -123456789 or all"
-            ),
-            ArgumentDefinition(
-                name="source",
-                type=ArgumentType.CHOICE,
-                required=False,
-                choices=["context", "N", "full"],
-                description="'context' (default), 'N' (last N messages), or 'full' (all history)"
             )
         ]
         super().__init__(
             name="groupmood_rebuild",
-            description="Rebuild group mood data from different sources",
+            description="Rebuild group mood data from context",
             admin_only=True,
             arguments=arguments,
-            description_ru="Перестроить данные настроения группы из разных источников"
+            description_ru="Перестроить данные настроения группы из контекста"
         )
 
     def _get_raw_help_text(self, language: str = "en") -> str:
@@ -52,19 +45,14 @@ class GroupMoodRebuildCommand(Command):
             f"{self.command_name} - {self.description}",
             "",
             "USAGE:",
-            "/groupmood_rebuild <channel>|all [context|N|full]",
+            "/groupmood_rebuild <channel>|all",
             "",
             "PARAMETERS:",
-            "<channel>|all    : Channel ID (e.g., -123456789) or 'all' for all channels",
-            "[context|N|full] : Data source (optional, default: context)",
-            "                  - context: Use current stored context messages",
-            "                  - N: Use last N messages from Telegram API",
-            "                  - full: Use full chat history from Telegram API",
+            "<channel>|all : Channel ID (e.g., -123456789) or 'all' for all channels",
             "",
             "EXAMPLES:",
-            "/groupmood_rebuild -123456789        # Rebuild specific channel using context",
-            "/groupmood_rebuild all full          # Rebuild all channels using full history",
-            "/groupmood_rebuild -123456789 N      # Rebuild channel using last N messages",
+            "/groupmood_rebuild -123456789    # Rebuild specific channel",
+            "/groupmood_rebuild all           # Rebuild all channels",
             "",
             "NOTE: This is an admin-only command that uses batching for performance."
         ]
@@ -98,20 +86,19 @@ class GroupMoodRebuildCommand(Command):
             except ArgumentParseError as e:
                 await message.reply_text(
                     f"❌ Неверные аргументы: {str(e)}\n\n"
-                    f"Использование: /groupmood_rebuild <channel>|all [context|N|full]\n"
-                    f"Пример: /groupmood_rebuild -123456789 full"
+                    f"Использование: /groupmood_rebuild <channel>|all\n"
+                    f"Пример: /groupmood_rebuild -123456789"
                 )
                 return
 
             if not args or "target" not in args:
                 await message.reply_text(
-                    "❌ Неверный синтаксис. Используйте: /groupmood_rebuild <channel>|all [context|N|full]\n"
-                    "Пример: /groupmood_rebuild -123456789 full"
+                    "❌ Неверный синтаксис. Используйте: /groupmood_rebuild <channel>|all\n"
+                    "Пример: /groupmood_rebuild -123456789"
                 )
                 return
 
             target = args["target"]
-            source = args.get("source", "context")
 
             # Validate target
             if target == "all":
@@ -123,24 +110,19 @@ class GroupMoodRebuildCommand(Command):
                     await message.reply_text(f"❌ Неверный ID канала: {target}")
                     return
 
-            # Validate source
-            if source not in ["context", "N", "full"]:
-                await message.reply_text(f"❌ Invalid source: {source}. Use 'context', 'N', or 'full'.")
-                return
-
-            await self._rebuild_group_mood(target_chat_ids, source, message)
+            await self._rebuild_group_mood(target_chat_ids, message)
 
         except Exception as e:
             logger.error(f"Error in groupmood-rebuild command: {e}")
             await message.reply_text("❌ Error rebuilding group mood data.")
 
-    async def _rebuild_group_mood(self, target_chat_ids, source: str, message) -> None:
-        """Rebuild group mood data for specified channels using the given source."""
+    async def _rebuild_group_mood(self, target_chat_ids, message) -> None:
+        """Rebuild group mood data for specified channels using context data."""
         try:
             if target_chat_ids is None:
                 # Rebuild all channels
                 await message.reply_text(
-                    f"🔄 Starting group mood rebuild for ALL channels using {source} data...\n\n"
+                    f"🔄 Starting group mood rebuild for ALL channels using context data...\n\n"
                     "This may take several minutes depending on the number of channels and data size."
                 )
 
@@ -155,7 +137,7 @@ class GroupMoodRebuildCommand(Command):
                 # Rebuild specific channel
                 chat_id = target_chat_ids[0]
                 await message.reply_text(
-                    f"🔄 Starting group mood rebuild for channel {chat_id} using {source} data..."
+                    f"🔄 Starting group mood rebuild for channel {chat_id} using context data..."
                 )
 
             # Process channels in batches
@@ -169,7 +151,7 @@ class GroupMoodRebuildCommand(Command):
 
                 for chat_id in batch_chat_ids:
                     try:
-                        messages_processed = await self._rebuild_single_channel_mood(chat_id, source)
+                        messages_processed = await self._rebuild_single_channel_mood(chat_id)
                         successful_rebuilds += 1
                         total_processed += 1
                         total_messages_processed += messages_processed
@@ -194,20 +176,20 @@ class GroupMoodRebuildCommand(Command):
             await message.reply_text(
                 f"✅ Group mood rebuild completed!\n\n"
                 f"🎯 Target: {target_desc}\n"
-                f"📊 Data Source: {source}\n"
+                f"📊 Data Source: context\n"
                 f"✅ Successful: {successful_rebuilds}/{total_processed} channels\n"
                 f"💬 Messages Processed: {total_messages_processed}\n"
                 f"💾 All changes saved to disk"
             )
 
-            logger.info(f"Rebuilt group mood for {successful_rebuilds}/{total_processed} channels using {source} data, processed {total_messages_processed} messages")
+            logger.info(f"Rebuilt group mood for {successful_rebuilds}/{total_processed} channels using context data, processed {total_messages_processed} messages")
 
         except Exception as e:
             logger.error(f"Error rebuilding group mood: {e}")
             await message.reply_text("❌ Error rebuilding group mood data.")
 
-    async def _rebuild_single_channel_mood(self, chat_id: int, source: str) -> int:
-        """Rebuild mood data for a single channel using the specified source.
+    async def _rebuild_single_channel_mood(self, chat_id: int) -> int:
+        """Rebuild mood data for a single channel using context data.
 
         Returns:
             int: Number of messages processed
@@ -226,21 +208,9 @@ class GroupMoodRebuildCommand(Command):
                 base_url=config.base_url,
             )
 
-            # Determine message source based on rebuild mode
-            if source == "full":
-                # Use all available message history
-                all_messages = message_history.get_all_messages_for_chat(chat_id) or []
-                source_description = "full message history"
-            elif source == "N":
-                # Use last N messages (configurable, defaulting to 100)
-                n_messages = getattr(config, 'rebuild_n_messages', 100)
-                recent_messages = message_history.get_recent_messages(chat_id) or []
-                all_messages = recent_messages[-n_messages:] if recent_messages else []
-                source_description = f"last {n_messages} messages"
-            else:  # context
-                # Use current context messages (recent messages)
-                all_messages = message_history.get_recent_messages(chat_id) or []
-                source_description = "current context messages"
+            # Use current context messages (recent messages)
+            all_messages = message_history.get_recent_messages(chat_id) or []
+            source_description = "current context messages"
 
             if not all_messages:
                 logger.warning(f"No {source_description} available for channel {chat_id}")

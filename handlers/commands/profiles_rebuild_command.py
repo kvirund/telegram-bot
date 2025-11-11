@@ -30,13 +30,6 @@ class ProfilesRebuildCommand(Command):
                 description="User ID or 'all' for all known users from message history. Example: 123456789 or all"
             ),
             ArgumentDefinition(
-                name="source",
-                type=ArgumentType.CHOICE,
-                required=False,
-                choices=["context", "N", "full"],
-                description="'context' (default), 'N' (last N messages), or 'full' (all history)"
-            ),
-            ArgumentDefinition(
                 name="channel",
                 type=ArgumentType.STRING,
                 required=True,
@@ -45,10 +38,10 @@ class ProfilesRebuildCommand(Command):
         ]
         super().__init__(
             name="profiles_rebuild",
-            description="Rebuild user profiles from message history",
+            description="Rebuild user profiles from context",
             admin_only=True,
             arguments=arguments,
-            description_ru="Перестроить профили пользователей из истории сообщений"
+            description_ru="Перестроить профили пользователей из контекста"
         )
 
     def _get_raw_help_text(self, language: str = "en") -> str:
@@ -57,23 +50,19 @@ class ProfilesRebuildCommand(Command):
             f"{self.command_name} - {self.description}",
             "",
             "USAGE:",
-            "/profiles_rebuild <user>|all [context|N|full] <channel>|current|all",
+            "/profiles_rebuild <user>|all <channel>|current|all",
             "",
             "PARAMETERS:",
             "<user>|all      : User ID (e.g., 123456789) or 'all' for all known users from message history",
-            "[context|N|full]: Data source (optional, default: context)",
-            "                  - context: Use current stored context messages",
-            "                  - N: Use last N messages from Telegram API",
-            "                  - full: Use full chat history from Telegram API",
             "<channel>|current|all : Channel scope (required)",
             "                  - current: Use only current channel history",
             "                  - all: Use history from all channels bot is in",
             "                  - <channel_id>: Use specific channel (e.g., -123456789)",
             "",
             "EXAMPLES:",
-            "/profiles_rebuild 123456789 context current    # Rebuild user using current channel context",
-            "/profiles_rebuild all full all                 # Rebuild ALL KNOWN users using full history from ALL channels",
-            "/profiles_rebuild all N -123456789             # Rebuild all users from specific channel using last N messages",
+            "/profiles_rebuild 123456789 current    # Rebuild user using current channel context",
+            "/profiles_rebuild all all               # Rebuild ALL KNOWN users using context from ALL channels",
+            "/profiles_rebuild all -123456789        # Rebuild all users from specific channel",
             "",
             "NOTE: 'all' discovers all users from message history and rebuilds their profiles. Uses batching for performance."
         ]
@@ -107,20 +96,19 @@ class ProfilesRebuildCommand(Command):
             except ArgumentParseError as e:
                 await message.reply_text(
                     f"❌ Неверные аргументы: {str(e)}\n\n"
-                    f"Использование: /profiles_rebuild <user>|all [context|N|full] <channel>|current|all\n"
-                    f"Пример: /profiles_rebuild all full current"
+                    f"Использование: /profiles_rebuild <user>|all <channel>|current|all\n"
+                    f"Пример: /profiles_rebuild all current"
                 )
                 return
 
             if not args or "user" not in args:
                 await message.reply_text(
-                    "❌ Неверный синтаксис. Используйте: /profiles_rebuild <user>|all [context|N|full] <channel>|current|all\n"
-                    "Пример: /profiles_rebuild all full current"
+                    "❌ Неверный синтаксис. Используйте: /profiles_rebuild <user>|all <channel>|current|all\n"
+                    "Пример: /profiles_rebuild all current"
                 )
                 return
 
             target_user = args["user"]
-            source = args.get("source", "context")
             channel_param = args["channel"]
 
             # Validate user target
@@ -149,19 +137,14 @@ class ProfilesRebuildCommand(Command):
                     await message.reply_text(f"❌ Неверный параметр канала: {channel_param}. Используйте 'current', 'all' или ID канала (например, -123456789).")
                     return
 
-            # Validate source
-            if source not in ["context", "N", "full"]:
-                await message.reply_text(f"❌ Неверный источник: {source}. Используйте 'context', 'N' или 'full'.")
-                return
-
-            await self._rebuild_profiles(target_user_ids, source, channel_filter, channel_param, channel_description, message)
+            await self._rebuild_profiles(target_user_ids, channel_filter, channel_param, channel_description, message)
 
         except Exception as e:
             logger.error(f"Error in profiles-rebuild command: {e}")
             await message.reply_text("❌ Ошибка перестройки профилей пользователей.")
 
-    async def _rebuild_profiles(self, target_user_ids, source: str, channel_filter, channel_param, channel_description, message) -> None:
-        """Rebuild user profiles using the specified parameters."""
+    async def _rebuild_profiles(self, target_user_ids, channel_filter, channel_param, channel_description, message) -> None:
+        """Rebuild user profiles using context data."""
         try:
             # Get AI provider for profile enrichment
             ai_provider = create_provider(
@@ -174,21 +157,12 @@ class ProfilesRebuildCommand(Command):
             if target_user_ids is None:
                 # Rebuild all known users (from message history)
                 await message.reply_text(
-                    f"🔄 Starting profile rebuild for ALL KNOWN users using {source} data from {channel_description}...\n\n"
+                    f"🔄 Starting profile rebuild for ALL KNOWN users using context data from {channel_description}...\n\n"
                     "This may take several minutes depending on the number of users and data size."
                 )
 
                 # Get all user IDs from message history
                 all_known_user_ids = set()
-
-                # For "full" source, get actual channel participants via Telegram API
-                # For "context" source, scan stored message history
-                if source == "full":
-                    # For full rebuilds, we need to get actual channel participants
-                    # This requires bot instance and API calls - for now, fall back to message history scanning
-                    # TODO: Implement proper Telegram API participant fetching
-                    logger.info("Full rebuild requested - scanning message history for user discovery")
-                    pass
 
                 # Scan message history to find all users
                 if channel_param == "current":
@@ -231,20 +205,12 @@ class ProfilesRebuildCommand(Command):
                 user_id = target_user_ids[0]
                 channel_desc = f" from channel {channel_filter}" if channel_filter else ""
                 await message.reply_text(
-                    f"🔄 Starting profile rebuild for user {user_id} using {source} data{channel_desc}..."
+                    f"🔄 Starting profile rebuild for user {user_id} using context data{channel_desc}..."
                 )
 
-            # For profile rebuilding, we process each user individually
-            # The source parameter determines how many messages to use per user
-            if source == "full":
-                source_description = "full message history"
-                messages_per_user = 100  # Use up to 100 messages per user
-            elif source == "N":
-                source_description = "last N messages from history"
-                messages_per_user = getattr(config, 'rebuild_n_messages', 50)
-            else:  # context
-                source_description = "current context messages"
-                messages_per_user = 30  # Use recent context messages
+            # For profile rebuilding, we always use context messages
+            source_description = "current context messages"
+            messages_per_user = 30  # Use recent context messages
 
             await message.reply_text(
                 f"🔄 Processing profiles for rebuild...\n\n"
