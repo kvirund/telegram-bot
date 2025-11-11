@@ -175,6 +175,36 @@ Rebuilds group mood analysis data using different data sources. Admin only.
 
 ---
 
+#### `/users` - List All Known Users
+Lists all users known to the bot from message history and profile files. Admin only.
+
+**Usage:**
+```
+/users
+```
+
+**Information Shown:**
+- User ID
+- Display name (first name + last name)
+- Username (if available)
+- Source indicators:
+  - 💬 Found in message history only
+  - 📁 Found in profile files only
+  - 📁💬 Found in both sources
+
+**Examples:**
+```
+/users  # Lists all users known to the bot
+```
+
+**Output includes:**
+- Total user count
+- Breakdown by source (history, profiles, both)
+- Sorted by user ID for consistency
+- Handles large lists with message splitting
+
+---
+
 #### `/profiles-rebuild` - Rebuild User Profiles
 Rebuilds AI user profiles using different data sources. Admin only.
 
@@ -226,8 +256,8 @@ All user commands plus:
 - `/comment <chat_id>` - Force autonomous comment
 - `/context <chat_id>` - Clear any chat's context
 - `/profile <user>` - View user profiles
-- `/groupmood-rebuild <channel>|all [context|N|full]` - Rebuild group mood data
-- `/profiles-rebuild <user>|all [context|N|full] [<channel>]` - Rebuild user profiles
+- `/groupmood_rebuild <channel>|all [context|N|full]` - Rebuild group mood data
+- `/profiles_rebuild <user>|all [context|N|full] [<channel>]` - Rebuild user profiles
 
 ### Setting Administrators
 
@@ -363,8 +393,9 @@ See what the bot has learned about you.
  /comment <chat_id>       - Force bot comment
  /context <chat_id>       - Clear specific chat context
  /profile <identifier>    - View user profile
- /groupmood-rebuild <channel>|all [source]  - Rebuild group mood data
- /profiles-rebuild <user>|all [source] [channel]  - Rebuild user profiles
+ /users                   - List all known users
+ /groupmood_rebuild <channel>|all [source]  - Rebuild group mood data
+ /profiles_rebuild <user>|all [source] [channel]  - Rebuild user profiles
 ```
 
 ### Getting Your User ID

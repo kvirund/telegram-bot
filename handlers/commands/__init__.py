@@ -27,6 +27,7 @@ from . import reactionstats_command  # noqa: F401
 from . import groupmood_command  # noqa: F401
 from . import groupmood_rebuild_command  # noqa: F401
 from . import profiles_rebuild_command  # noqa: F401
+from . import users_command  # noqa: F401
 
 __all__ = [
     "command_registry",
