@@ -125,7 +125,20 @@ class HelpCommand(Command):
         data = query.data
         user_id = query.from_user.id
 
-        # Parse callback data
+        # Parse callback data - handle both old underscore format and new pipe format
+        if "|" in data:
+            # New format: help_cmd|command_name|language
+            parts = data.split("|")
+            if len(parts) < 3:
+                return
+            action = parts[0].split("_")[1]  # Extract action from "help_cmd"
+            if action == "cmd":
+                command_name = parts[1]
+                language = parts[2]
+                await self._show_command_detail(query, command_name, language)
+            return
+
+        # Old format (underscore-based) for backward compatibility
         parts = data.split("_")
         if len(parts) < 2:
             return
@@ -171,9 +184,10 @@ class HelpCommand(Command):
         keyboard = []
         for cmd in sorted(commands, key=lambda x: x.name):
             # Button text should be plain text (no HTML parsing)
+            # Use a separator that's not in command names (pipe |) to avoid conflicts with underscores
             keyboard.append([InlineKeyboardButton(
                 f"{cmd.command_name} - {cmd.description}",
-                callback_data=f"help_cmd_{cmd.name}_{language}"
+                callback_data=f"help_cmd|{cmd.name}|{language}"
             )])
 
         # Back button

@@ -71,12 +71,25 @@ class Command(ABC):
     def get_help_text(self, language: str = "en") -> str:
         """Get help text for this command.
 
+        This method is FINAL and should NOT be overridden by subclasses.
+        Subclasses should override _get_raw_help_text() instead.
+
         Args:
             language: Language code ('en' or 'ru')
 
         Returns:
             str: Help text for this command (HTML escaped)
         """
+        # Runtime check to detect incorrect overriding
+        if hasattr(self.__class__, 'get_help_text') and self.__class__.get_help_text is not Command.get_help_text:
+            import warnings
+            warnings.warn(
+                f"Command {self.__class__.__name__} overrides get_help_text() which is marked as final. "
+                f"Override _get_raw_help_text() instead.",
+                UserWarning,
+                stacklevel=2
+            )
+
         help_text = self._get_raw_help_text(language)
         return html.escape(help_text)
 

@@ -328,16 +328,20 @@ class MessageHistory:
         """
         return list(self.history.keys())
 
-    def get_recent_messages(self, chat_id: int):
+    def get_recent_messages(self, chat_id: int, limit: int = None):
         """Get recent messages for a chat.
 
         Args:
             chat_id: Chat ID
+            limit: Maximum number of recent messages to return (optional)
 
         Returns:
             List of message dicts or None
         """
-        return self.history.get(chat_id)
+        messages = self.history.get(chat_id)
+        if messages and limit:
+            return messages[-limit:]  # Return the most recent messages
+        return messages
 
     def get_all_messages_for_chat(self, chat_id: int) -> List[Dict[str, Any]]:
         """Get all messages for a chat in the format expected by profile rebuilding.

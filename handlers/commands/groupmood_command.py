@@ -23,8 +23,8 @@ class GroupMoodCommand(Command):
             admin_only=False
         )
 
-    def get_help_text(self, language: str = "en") -> str:
-        """Get help text for the groupmood command."""
+    def _get_raw_help_text(self, language: str = "en") -> str:
+        """Get raw help text for the groupmood command."""
         help_lines = [
             f"{self.command_name} - {self.description}",
             "",
