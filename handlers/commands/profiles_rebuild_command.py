@@ -56,7 +56,7 @@ class ProfilesRebuildCommand(Command):
             f"{self.command_name} - {self.description}",
             "",
             "USAGE:",
-            "/profiles_rebuild <user>|all [context|N|full] <channel>",
+            "/profiles_rebuild <user>|all [context|N|full] <channel>|current|all",
             "",
             "PARAMETERS:",
             "<user>|all      : User ID (e.g., 123456789) or 'all' for all known users from message history",
@@ -64,7 +64,7 @@ class ProfilesRebuildCommand(Command):
             "                  - context: Use current stored context messages",
             "                  - N: Use last N messages from Telegram API",
             "                  - full: Use full chat history from Telegram API",
-            "<channel>       : Channel scope (required)",
+            "<channel>|current|all : Channel scope (required)",
             "                  - current: Use only current channel history",
             "                  - all: Use history from all channels bot is in",
             "                  - <channel_id>: Use specific channel (e.g., -123456789)",
@@ -106,14 +106,14 @@ class ProfilesRebuildCommand(Command):
             except ArgumentParseError as e:
                 await message.reply_text(
                     f"❌ Invalid arguments: {str(e)}\n\n"
-                    f"Usage: /profiles_rebuild <user>|all [context|N|full] <channel>\n"
+                    f"Usage: /profiles_rebuild <user>|all [context|N|full] <channel>|current|all\n"
                     f"Example: /profiles_rebuild all full current"
                 )
                 return
 
             if not args or "user" not in args:
                 await message.reply_text(
-                    "❌ Invalid syntax. Use: /profiles_rebuild <user>|all [context|N|full] <channel>\n"
+                    "❌ Invalid syntax. Use: /profiles_rebuild <user>|all [context|N|full] <channel>|current|all\n"
                     "Example: /profiles_rebuild all full current"
                 )
                 return
