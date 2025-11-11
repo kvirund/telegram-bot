@@ -42,7 +42,8 @@ class GroupMoodRebuildCommand(Command):
             name="groupmood_rebuild",
             description="Rebuild group mood data from different sources",
             admin_only=True,
-            arguments=arguments
+            arguments=arguments,
+            description_ru="Перестроить данные настроения группы из разных источников"
         )
 
     def _get_raw_help_text(self, language: str = "en") -> str:

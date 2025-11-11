@@ -21,7 +21,7 @@ class JokeCommand(Command):
     """
 
     def __init__(self):
-        super().__init__(name="joke", description="Generate joke from context or about a topic", admin_only=False)
+        super().__init__(name="joke", description="Generate joke from context or about a topic", admin_only=False, description_ru="Сгенерировать анекдот из контекста или на тему")
 
     async def execute(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /joke command.

@@ -121,7 +121,7 @@ class ArgumentParser:
                 # Named argument
                 arg_def = named_defs[part]
                 if i + 1 >= len(args_parts):
-                    raise ArgumentParseError(f"Missing value for argument '{part}'")
+                    raise ArgumentParseError(f"Отсутствует значение для аргумента '{part}'")
                 value_str = args_parts[i + 1]
                 parsed[arg_def.name] = self._parse_value(value_str, arg_def)
                 i += 2
@@ -138,13 +138,13 @@ class ArgumentParser:
                     parsed[arg_def.name] = self._parse_value(part, arg_def)
                     i += 1
             else:
-                raise ArgumentParseError(f"Unexpected argument: {part}")
+                raise ArgumentParseError(f"Неожиданный аргумент: {part}")
 
         # Add defaults for missing optional arguments
         for arg_def in self.definitions:
             if arg_def.name not in parsed:
                 if arg_def.required:
-                    raise ArgumentParseError(f"Missing required argument: {arg_def.name}")
+                    raise ArgumentParseError(f"Отсутствует обязательный аргумент: {arg_def.name}")
                 elif arg_def.default is not None:
                     parsed[arg_def.name] = arg_def.default
 
@@ -152,7 +152,7 @@ class ArgumentParser:
         for name, value in parsed.items():
             arg_def = self._arg_map[name]
             if not self._validate_value(value, arg_def):
-                raise ArgumentParseError(f"Invalid value for argument '{name}': {value}")
+                raise ArgumentParseError(f"Неверное значение для аргумента '{name}': {value}")
 
         return ParsedArguments(parsed)
 
@@ -161,7 +161,7 @@ class ArgumentParser:
         parsed = {}
         for arg_def in self.definitions:
             if arg_def.required:
-                raise ArgumentParseError(f"Missing required argument: {arg_def.name}")
+                raise ArgumentParseError(f"Отсутствует обязательный аргумент: {arg_def.name}")
             elif arg_def.default is not None:
                 parsed[arg_def.name] = arg_def.default
         return ParsedArguments(parsed)
@@ -192,7 +192,7 @@ class ArgumentParser:
             parts.append(current)
 
         if in_quotes:
-            raise ArgumentParseError("Unclosed quote in arguments")
+            raise ArgumentParseError("Незакрытая кавычка в аргументах")
 
         return parts
 
@@ -216,7 +216,7 @@ class ArgumentParser:
             else:
                 raise ValueError(f"Unsupported argument type: {arg_def.type}")
         except ValueError as e:
-            raise ArgumentParseError(f"Invalid value for {arg_def.type.value} argument '{arg_def.name}': {e}")
+            raise ArgumentParseError(f"Неверное значение для аргумента типа {arg_def.type.value} '{arg_def.name}': {e}")
 
     def _validate_value(self, value: Any, arg_def: ArgumentDefinition) -> bool:
         """Validate parsed value against argument definition."""
